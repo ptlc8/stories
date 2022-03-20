@@ -144,11 +144,12 @@ StoryDisplayer = function() {
         if (story)
             displayScene(story.getScene());
         if (fullscreen) {
-            storyDiv.appendChild(createElement("img", {src:"fullscreen.svg", className:"fullscreen-button"}, [], {click:function(){
+            let fullscreenButton = createElement("img", {src:"fullscreen.svg", className:"fullscreen-button"}, [], {click:function(){
                 storyDiv.requestFullscreen();
-            }}));
+            }});
+            storyDiv.appendChild(fullscreenButton);
             document.addEventListener("fullscreenchange", function() {
-                fsButton.style.display = document.fullscreenElement==storyDiv ? "none" : "";
+                fullscreenButton.style.display = document.fullscreenElement==storyDiv ? "none" : "";
             });
         }
         return {displayScene};
