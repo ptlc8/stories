@@ -79,6 +79,33 @@
 	top: 2%;
 	filter: invert(100%) drop-shadow(1px 2px 5px rgba(0,0,0,0.2));
 }
+.vars {
+    position: absolute;
+    top: 2%;
+    left: 2%;
+    background-color: rgb(200,200,200);
+    background-color: rgba(200,200,200,0.6);
+    padding: 1em;
+    border-radius: 1em;
+}
+.vars > div {
+    display: inline-block;
+    text-align: center;
+    margin: 0.2em;
+}
+.vars > div > div {
+    height: 6em;
+    background: whitesmoke;
+    border-radius: 1em;
+    width: 1em;
+    overflow: hidden;
+    position: relative;
+}
+.vars > div > div > div {
+    width: 1em;
+    position: absolute;
+    bottom: 0;
+}
 @media (orientation: portrait) {
     .choices > * {
         margin: 20px 10px;
