@@ -80,9 +80,6 @@
 	filter: invert(100%) drop-shadow(1px 2px 5px rgba(0,0,0,0.2));
 }
 @media (orientation: portrait) {
-    .speaker, .speech, .choices {
-        font-size: xx-large;
-    }
     .choices > * {
         margin: 20px 10px;
     }
