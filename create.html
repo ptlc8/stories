@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Création d'histoire</title>
+        <link rel="stylesheet" href="create.css" />
+        <link rel="stylesheet" href="waifus.css" />
+        <script src="waifus.js"></script>
+    </head>
+    <body>
+        <div id="scenes"></div>
+        <button id="add-scene">Ajouter une scène</button>
+        <div id="waifus"></div>
+        <div id="scene-editor">
+            <button id="next-reply">&gt;</button>
+            <button id="previous-reply">&lt;</button>
+            <button id="change-background">Changer l'image de fond</button>
+            <button id="test-story">Tester l'histoire</button>
+            <button id="save">Sauvegarder l'histoire</button>
+            <button id="add-reply">Ajouter une réplique</button>
+            <div id="replies"></div>
+            <select id="change-at-end">
+                <option value="choices">À la fin, plusieurs choix disponibles</option>
+                <option value="redirect">À la fin, redirection vers une autre scène</option>
+            </select>
+            <button id="add-choice">Ajouter un choix</button>
+            <div id="choices"></div>
+        </div>
+        <div id="images"></div>
+        <button id="add-image">Ajouter une image</button>
+        <textarea id="json" placeholder="Coller un JSON ici..."></textarea>
+        <script>
+            // fonction utile d'Ambi
+            function createElement(tag, properties={}, inner=[], eventListeners={}) {
+                let el = document.createElement(tag);
+                for (let p of Object.keys(properties)) if (p != "style") el[p] = properties[p];
+                if (properties.style) for (let p of Object.keys(properties.style)) el.style[p] = properties.style[p];
+                if (typeof inner == "object") for (let i of inner) el.appendChild(typeof i == "string" ? document.createTextNode(i) : i);
+                else el.innerText = inner;
+                for (let l of Object.keys(eventListeners)) el.addEventListener(l, eventListeners[l]);
+                return el
+            }
+            var scenes = [];
+            var currentSceneId = undefined;
+            var currentReplyId = 0;
+            var selectedImageId = undefined;
+            WaifusDisplayer.init(null, "waifus");
+            WaifusDisplayer.displayScene({speaker:"Créateur d'histoire",text:"Crée une nouvelle scène à gauche ⬅\nOu continue une histoire en collant le json en bas ⬇"});
+            document.getElementById("add-scene").addEventListener("click", function() {
+                scenes.push({background:"", replies:[{text:""}], atEnd:"choices", choices:[]});
+                refreshScenes();
+                refreshJSON();
+            });
+            var images = [];
+            document.getElementById("add-image").addEventListener("click", function() {
+                var imageSrc = prompt("Entre l'URL de l'image à ajouter 🖼");
+                if (!imageSrc) return;
+                images.push(imageSrc);
+                refreshImages();
+                refreshJSON();
+            });
+            document.getElementById("previous-reply").addEventListener("click", function() {
+                if (currentReplyId > 0) {
+                    currentReplyId--;
+                    refreshScene();
+                }
+            });
+            document.getElementById("next-reply").addEventListener("click", function() {
+                if (currentReplyId < scenes[currentSceneId].replies.length-1) {
+                    currentReplyId++;
+                    refreshScene();
+                }
+            });
+            document.getElementById("change-background").addEventListener("click", function() {
+                queryImageIndex().then(function(imageIndex) {
+                    scenes[currentSceneId].background = imageIndex;
+                    refreshScene();
+                    refreshJSON();
+                    refreshScenes();
+                });
+            });
+            document.getElementById("add-reply").addEventListener("click", function() {
+                scenes[currentSceneId].replies.push({text:""});
+                refreshReplies();
+                refreshJSON();
+            });
+            document.getElementById("json").addEventListener("keyup", function(e) {
+                loadFromJSON(e.target.value);
+            });
+            document.getElementById("change-at-end").addEventListener("click", function(e) {
+                if (scenes[currentSceneId].atEnd == e.target.value) return;
+                if (e.target.value == "redirect" && scenes[currentSceneId].choices.length!=0 && !confirm("En appliquant ces changements vous perdrez vos choix.")) return;
+                scenes[currentSceneId].atEnd = e.target.value;
+                if (e.target.value == "choices") {
+                    delete scenes[currentSceneId].redirect;
+                    scenes[currentSceneId].choices = [];
+                }
+                if (e.target.value == "redirect") {
+                    delete scenes[currentSceneId].choices;
+                    scenes[currentSceneId].redirect = 0;
+                }
+                refreshChoices();
+                refreshJSON();
+            });
+            document.getElementById("add-choice").addEventListener("click", function() {
+                if (!scenes[currentSceneId].choices) return;
+                scenes[currentSceneId].choices.push({text:"",id:0});
+                refreshChoices();
+                refreshJSON();
+            });
+            document.getElementById("test-story").addEventListener("click", function() {
+                if (scenes.length == 0) return alert("Il faut au moins une scène pour tester une histoire.");
+                var testerTab = open("tester.html");
+                testerTab.addEventListener("load", function(e) {
+                    console.log("hey");
+                    testerTab.startTest({images:images, scenes:scenes}, {}); // TODO : stats
+                });
+            });
+            document.getElementById("save").addEventListener("click", function() {
+                localStorage.story = JSON.stringify({images:images, scenes:scenes});
+                alert("L'histoire a bien été enregistrée sur votre navigateur 💾");
+            });
+            window.addEventListener("load", function() {
+                if (localStorage.story) {
+                    document.getElementById("json").value = localStorage.story;
+                    loadFromJSON(localStorage.story);
+                }
+            });
+            function refreshReplies() {
+                var repliesDiv = document.getElementById("replies");
+                repliesDiv.innerText = "";
+                for (const [i,reply] of scenes[currentSceneId].replies.entries()) {
+                    let iFix = i;
+                    var replyFS = document.createElement("fieldset");
+                    var legend = document.createElement("legend");
+                    legend.innerText = "Réplique "+i;
+                    replyFS.appendChild(legend);
+                    var text = document.createElement("input");
+                    text.placeholder = "Texte";
+                    text.value = reply.text || "";
+                    var textchange = function(e) {
+                        let old = scenes[currentSceneId].replies[i].text;
+                        scenes[currentSceneId].replies[i].text = e.target.value;
+                        if (old != e.target.value) {
+                            refreshScene();
+                            refreshJSON();
+                        }
+                    };
+                    text.addEventListener("keyup", textchange);
+                    replyFS.appendChild(text);
+                    var speaker = document.createElement("input");
+                    speaker.placeholder = "Locuteur";
+                    speaker.value = reply.speaker || "";
+                    var speakerchange = function(e) {
+                        let old = scenes[currentSceneId].replies[i].speaker;
+                        scenes[currentSceneId].replies[i].speaker = e.target.value;
+                        if (old != e.target.value) {
+                            refreshScene();
+                            refreshJSON();
+                        }
+                    };
+                    speaker.addEventListener("keyup", speakerchange);
+                    replyFS.appendChild(speaker);
+                    replyFS.appendChild(createElement("input", {type:"color",value:reply.color||"#008800"}, [], {change: function(e) {
+                        let old = scenes[currentSceneId].replies[i].color;
+                        scenes[currentSceneId].replies[i].color = e.target.value;
+                        if (old != e.target.value) {
+                            refreshScene();
+                            refreshJSON();
+                        }
+                    }}));
+                    var imageButton = document.createElement("button");
+                    imageButton.innerText = "Changer l'image";
+                    imageButton.addEventListener("click", function() {
+                        queryImageIndex().then(function(imageIndex) {
+                            scenes[currentSceneId].replies[iFix].image = imageIndex;
+                            refreshScene();
+                            refreshJSON();
+                            refreshScenes();
+                        });
+                    });
+                    replyFS.appendChild(imageButton);
+                    var deleteImageButton = document.createElement("button");
+                    deleteImageButton.innerText = "Supprimer l'image";
+                    deleteImageButton.addEventListener("click", function() {
+                        delete scenes[currentSceneId].replies[iFix].image;
+                        refreshScene();
+                        refreshJSON();
+                        refreshScenes();
+                    });
+                    replyFS.appendChild(deleteImageButton);
+                    var deleteReply = document.createElement("button");
+                    deleteReply.innerText = "Supprimer la réplique";
+                    deleteReply.addEventListener("click", function() {
+                        scenes[currentSceneId].replies.splice(iFix, 1);
+                        refreshReplies();
+                        refreshJSON();
+                    });
+                    replyFS.appendChild(deleteReply);
+                    repliesDiv.appendChild(replyFS);
+                }
+            }
+            function refreshScene() {
+                //TODO : condition x choices
+                WaifusDisplayer.displayScene({
+                    background: scenes[currentSceneId].background!==undefined ? images[scenes[currentSceneId].background] : undefined,
+                    text: scenes[currentSceneId].replies[currentReplyId].text,
+                    speaker: scenes[currentSceneId].replies[currentReplyId].speaker,
+                    color: scenes[currentSceneId].replies[currentReplyId].color,
+                    image: scenes[currentSceneId].replies[currentReplyId].image!==undefined ? images[scenes[currentSceneId].replies[currentReplyId].image] : undefined,
+                    choices: scenes[currentSceneId].replies.length-1 <= currentReplyId ? scenes[currentSceneId].choices : []
+                });
+            }
+            function queryImageIndex() {
+                var p = new Promise(function(resolve, reject) {
+                    if (images.length == 0) {
+                        alert("Ajoutes d'abord une image en appuyant sur \"Ajouter une image\"");
+                        return;
+                    }
+                    document.getElementById("images").className = "FOCUS";
+                    selectedImageId = undefined;
+                    var intervalId = setInterval(function() {
+                        if (selectedImageId !== undefined) {
+                            clearInterval(intervalId);
+                            document.getElementById("images").className = "focus";
+                            resolve (selectedImageId);
+                        }
+                    }, 10);
+                });
+                return p;
+            }
+            function refreshImages() {
+                var imagesDiv = document.getElementById("images");
+                imagesDiv.innerHTML = "";
+                for (const [i, image] of images.entries()) {
+                    let index = i;
+                    var fig = document.createElement("figure");
+                    var img = document.createElement("img");
+                    img.src = image;
+                    img.addEventListener("click", function(e) {
+                        selectedImageId = index;
+                    });
+                    fig.appendChild(img);
+                    var cap = document.createElement("figcaption");
+                    cap.innerText = "❌ Supprimer l'image";
+                    cap.addEventListener("click", function(e) {
+                        images.splice(index, 1);
+                        refreshImages();
+                        refreshJSON();
+                    });
+                    fig.appendChild(cap);
+                    imagesDiv.appendChild(fig);
+                }
+            }
+            function refreshChoices() {
+                document.getElementById("change-at-end").value = scenes[currentSceneId].atEnd;
+                document.getElementById("add-choice").style.display = scenes[currentSceneId].atEnd=="choices"?"":"none";
+                var choicesDiv = document.getElementById("choices");
+                choicesDiv.innerText = "";
+                if (scenes[currentSceneId].atEnd=="choices") {
+                    for (const [i,choice] of scenes[currentSceneId].choices.entries()) {
+                        let index = i;
+                        var choiceFS = document.createElement("fieldset");
+                        var legend = document.createElement("legend");
+                        legend.innerText = "Choix "+i;
+                        choiceFS.appendChild(legend);
+                        var text = document.createElement("input");
+                        text.placeholder = "Choix "+i;
+                        text.value = choice.text || "";
+                        text.addEventListener("keyup", function(e) {
+                            let old = scenes[currentSceneId].choices[i].text;
+                            scenes[currentSceneId].choices[i].text = e.target.value;
+                            if (old != e.target.value) {
+                                refreshScene();
+                                refreshJSON();
+                            }
+                        });
+                        choiceFS.appendChild(text);
+                        var targetId = document.createElement("input");
+                        targetId.placeholder = "Id de la scène";
+                        targetId.type = "number";
+                        targetId.min = 0;
+                        targetId.max = scenes.length-1;
+                        targetId.value = choice.id || "";
+                        let onChangeTargetId = function(e) {
+                            let old = scenes[currentSceneId].choices[i].id;
+                            scenes[currentSceneId].choices[i].id = e.target.value;
+                            if (old != e.target.value) {
+                                refreshScene();
+                                refreshJSON();
+                            }
+                        }
+                        targetId.addEventListener("keyup", onChangeTargetId);
+                        targetId.addEventListener("change", onChangeTargetId);
+                        choiceFS.appendChild(targetId);
+                        var deleteReply = document.createElement("button");
+                        deleteReply.innerText = "Supprimer le choix";
+                        deleteReply.addEventListener("click", function() {
+                            scenes[currentSceneId].choices.splice(index, 1);
+                            refreshChoices();
+                            refreshJSON();
+                        });
+                        choiceFS.appendChild(deleteReply);
+                        choicesDiv.appendChild(choiceFS);
+                    }
+                } else if (scenes[currentSceneId].atEnd=="redirect") {
+                    var onChangeRedirect = function(e) {
+                        let old = scenes[currentSceneId].redirect;
+                        scenes[currentSceneId].redirect = e.target.value;
+                        if (old != e.target.value) {
+                            refreshScene();
+                            refreshJSON();
+                        }
+                    };
+                    choicesDiv.appendChild(createElement("fieldset", {}, [
+                        createElement("legend", {}, "Redirection vers une autre scène à la fin"),
+                        createElement("input", {type:"number",placeholder:"Id de la scène",min:0,max:scenes.length-1,value:scenes[currentSceneId].redirect||""}, [], {keyup:onChangeRedirect, change:onChangeRedirect})
+                    ]));
+                }
+            }
+            function refreshScenes() {
+                var scenesDiv = document.getElementById("scenes");
+                scenesDiv.innerHTML = "";
+                for (const [i, scene] of scenes.entries()) {
+                    let index = i;
+                    var fig = document.createElement("figure");
+                    let cvs = document.createElement("canvas");
+                    drawScenePreview(cvs, scene).then(function() {
+                        var ctx = cvs.getContext('2d');
+                        ctx.strokeStyle = "white";
+                        ctx.font = "36px Arial";
+                        ctx.strokeText("Scène n°"+index, 30, 60);
+                        ctx.font = "24px Arial";
+                        ctx.strokeText("Clique ici pour éditer", 30, 90);
+                        ctx.fillStyle = "black";
+                        ctx.font = "36px Arial";
+                        ctx.fillText("Scène n°"+index, 30, 60);
+                        ctx.font = "24px Arial";
+                        ctx.fillText("Clique ici pour éditer", 30, 90);
+                    });
+                    cvs.addEventListener("click", function(e) {
+                        currentSceneId = index;
+                        currentReplyId = 0;
+                        refreshReplies();
+                        refreshScene();
+                        refreshChoices();
+                    });
+                    fig.appendChild(cvs);
+                    var cap = document.createElement("figcaption");
+                    cap.innerText = "❌ Supprimer la scène";
+                    cap.addEventListener("click", function(e) {
+                        if (!confirm("Supprimer cette scène ?")) return;
+                        scenes.splice(index, 1);
+                        refreshScenes();
+                        refreshJSON();
+                    });
+                    fig.appendChild(cap);
+                    scenesDiv.appendChild(fig);
+                }
+            }
+            function drawScenePreview(cvs, scene) {
+                var promise = new Promise (function(resolve, reject) {
+                    var imageNeeded = scene.replies[0] && Number.isInteger(scene.replies[0].image) ? 2 : Number.isInteger(scene.background) ? 1 : 0;
+                    var ctx = cvs.getContext("2d");
+                    var bg = new Image();
+                    var img = new Image();
+                    bg.src = Number.isInteger(scene.background) ? images[scene.background] : "";
+                    img.src = scene.replies[0] && Number.isInteger(scene.replies[0].image) ? images[scene.replies[0].image] : "";
+                    if (!imageNeeded) resolve();
+                    bg.onload = img.onload = function() {
+                        ctx.drawImage(bg, 0, 0, cvs.width, cvs.height);
+                        ctx.drawImage(img, 0, 0, cvs.width, cvs.height);
+                        if (--imageNeeded == 0) resolve();
+                    }
+                });
+                return promise;
+            }
+            function refreshJSON() {
+                document.getElementById("json").value = JSON.stringify({images:images, scenes:scenes});
+            }
+            function loadFromJSON(json) {
+                var script = JSON.parse(json) || {};
+                images = script.images || [];
+                scenes = script.scenes || [];
+                currentSceneId = 0;
+                currentReplyId = 0;
+                refreshScene();
+                refreshReplies();
+                refreshImages();
+                refreshScenes();
+                refreshChoices();
+            }
+        </script>
+    </body>
+</html>

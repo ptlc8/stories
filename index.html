@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Waifus !!!</title>
+        <link rel="stylesheet" href="waifus.css" />
+        <style>
+            html, body { width: 100%; height: 100%; margin: 0; }
+            #waifus {width: 100%; height: 100%; position: absolute; }
+        </style>
+        <script src="waifus.js"></script>
+    </head>
+    <body>
+        <div id="waifus">
+            <!--<div class="images"></div>
+            <ul class="choices"></ul>
+            <fieldset class="speech-zone">
+                <legend class="speaker">Speaker</legend>
+                <span class="speech"></span>
+            </fieldset>-->
+        </div>
+        <script>
+            var urlParams = new URLSearchParams(window.location.search);
+            var scriptName = urlParams.has("script") ? urlParams.get("script") : "script";
+            Waifus.init(scriptName+".json", {luck:5}).then(function(scene) {
+                WaifusDisplayer.init(Waifus, "waifus", true);
+            });
+        </script>
+    </body>
+</html>
