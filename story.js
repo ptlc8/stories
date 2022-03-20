@@ -1,107 +1,92 @@
 Story = function() {
-    var scenes = [];
-    var images = [];
-    var PE = {};
-    var currentSceneId = 0;
-    var currentReplyId = 0;
-    var init = function(scriptUrlOrData, defaultStats) {
-        var promise = new Promise (function(resolve, reject) {
-            if (typeof scriptUrlOrData == "object") {
-                scenes = scriptUrlOrData.scenes;
-                images = scriptUrlOrData.images;
-                PE = defaultStats; //{food: 5, karma: 5, sleep: 5, luck: 5, courage: 5};
-                currentSceneId = 0;
-                currentReplyId = 0;
-                resolve(getScene());
-                resolve(getScene());
-                return;
-            }
+    var createFromScriptUrl = function(scriptUrl) {
+        return promise = new Promise(function(resolve, reject) {
             let xhr = new XMLHttpRequest();
-            xhr.open("GET", scriptUrlOrData);
+            xhr.open("GET", scriptUrl);
             xhr.onreadystatechange = (function(){
                 if (this.status == 200 && this.readyState == XMLHttpRequest.DONE) {
-                    let script = JSON.parse(this.response);
-                    scenes = script.scenes;
-                    images = script.images;
-                    PE = defaultStats; //{food: 5, karma: 5, sleep: 5, luck: 5, courage: 5};
-                    currentSceneId = 0;
-                    currentReplyId = 0;
-                    resolve(getScene());
+                    resolve(create(JSON.parse(this.response)));
                 }
             });
             xhr.send();
         });
-        return promise;
     };
-    var getScene = function() {
-        let choices = [];
-        if (scenes[currentSceneId].choices && scenes[currentSceneId].replies.length-1 <= currentReplyId)
-            for (let choice of scenes[currentSceneId].choices) {
-                if (testCondition(choice.condition))
-                    choices.push(choice);
+    var create = function(scriptData) {
+        var scenes = scriptData.scenes || [];
+        var images = scriptData.images || [];
+        var vars = scriptData.vars || {};
+        var currentSceneId = 0;
+        var currentReplyId = 0;
+        var getScene = function() {
+            let choices = [];
+            if (scenes[currentSceneId].choices && scenes[currentSceneId].replies.length-1 <= currentReplyId)
+                for (let choice of scenes[currentSceneId].choices) {
+                    if (testCondition(choice.condition))
+                        choices.push(choice);
+                }
+            return {
+                background: scenes[currentSceneId].background!==undefined ? images[scenes[currentSceneId].background] : undefined,
+                text: scenes[currentSceneId].replies[currentReplyId].text,
+                speaker: scenes[currentSceneId].replies[currentReplyId].speaker,
+                color: scenes[currentSceneId].replies[currentReplyId].color,
+                image: scenes[currentSceneId].replies[currentReplyId].image!==undefined ? images[scenes[currentSceneId].replies[currentReplyId].image] : undefined,
+                choices: choices,
+                vars: vars
+            };
+        };
+        var testCondition = function(condition) {
+            if (!condition) return true;
+            with (vars) return (eval(condition));
+        };
+        var applyEffect = function(effect) {
+            if (!effect) return;
+            with (vars) eval(effect);
+        };
+        var nextReply = function() {
+            currentReplyId++;
+            if (currentReplyId < scenes[currentSceneId].replies.length) return getScene();
+            else if (scenes[currentSceneId].atEnd == "redirect") {
+                goToScene(scenes[currentSceneId].redirect);
+                return getScene();
+            } else return null;
+        };
+        var goToScene = function(id) {
+            currentSceneId = id;
+            currentReplyId = 0;
+            
+        };
+        var nextScene = function(choiceId=null) {
+            if (choiceId == null) {
+                let choices = [];
+                for (let choice of scenes[currentSceneId].choices) {
+                    if (testCondition(choice.condition))
+                        choices.push(choice);
+                }
+                if (choices.length == 0) {
+                    console.info("[Story] Aucun choix possible OmG");
+                    return null;
+                }
+                let choice = choices[parseInt(Math.random()*choices.length)];
+                applyEffect(choice.effect);
+                goToScene(choice.id);
+            } else {
+                if (testCondition(scenes[currentSceneId].choices[choiceId].condition)) {
+                    applyEffect(scenes[currentSceneId].choices[choiceId].effect);
+                    goToScene(scenes[currentSceneId].choices[choiceId].id);
+                } else {
+                    console.info("[Story] Impossible d'effectuer ce choix");
+                    return null;
+                }
             }
+            return getScene();
+        };
         return {
-            background: scenes[currentSceneId].background!==undefined ? images[scenes[currentSceneId].background] : undefined,
-            text: scenes[currentSceneId].replies[currentReplyId].text,
-            speaker: scenes[currentSceneId].replies[currentReplyId].speaker,
-            color: scenes[currentSceneId].replies[currentReplyId].color,
-            image: scenes[currentSceneId].replies[currentReplyId].image!==undefined ? images[scenes[currentSceneId].replies[currentReplyId].image] : undefined,
-            choices: choices,
-            player: PE
+            nextReply: nextReply,
+            nextScene: nextScene,
+            getScene: getScene
         };
     };
-    var testCondition = function(condition) {
-        if (!condition) return true;
-        with (PE) return (eval(condition));
-    };
-    var applyEffect = function(effect) {
-        if (!effect) return;
-        with (PE) eval(effect);
-    };
-    var nextReply = function() {
-        currentReplyId++;
-        if (currentReplyId < scenes[currentSceneId].replies.length) return getScene();
-        else if (scenes[currentSceneId].atEnd == "redirect") {
-            goToScene(scenes[currentSceneId].redirect);
-            return getScene();
-        } else return null;
-    };
-    var goToScene = function(id) {
-        currentSceneId = id;
-        currentReplyId = 0;
-        
-    };
-    var nextScene = function(choiceId=null) {
-        if (choiceId == null) {
-            let choices = [];
-            for (let choice of scenes[currentSceneId].choices) {
-                if (testCondition(choice.condition))
-                    choices.push(choice);
-            }
-            if (choices.length == 0) {
-                console.info("[Story] Aucun choix possible OmG");
-                return null;
-            }
-            let choice = choices[parseInt(Math.random()*choices.length)];
-            applyEffect(choice.effect);
-            goToScene(choice.id);
-        } else {
-            if (testCondition(scenes[currentSceneId].choices[choiceId].condition)) {
-                applyEffect(scenes[currentSceneId].choices[choiceId].effect);
-                goToScene(scenes[currentSceneId].choices[choiceId].id);
-            } else {
-                console.info("[Story] Impossible d'effectuer ce choix");
-                return null;
-            }
-        }
-        return getScene();
-    };
-    return {
-        init: init,
-        nextReply: nextReply,
-        nextScene: nextScene,
-        getScene: getScene
-    };
+    return {create, createFromScriptUrl};
 }();
 
 StoryDisplayer = function() {

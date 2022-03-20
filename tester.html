@@ -14,10 +14,9 @@
     <body>
         <div id="story"></div>
         <script>
-            function startTest(data, stats={}) {
-                Story.init(data, stats).then(function(scene) {
-                    StoryDisplayer.init(Story, "story", true);
-                });
+            function startTest(data) {
+                var story = Story.create(data)
+                StoryDisplayer.init(story, "story", true);
             }
         </script>
     </body>

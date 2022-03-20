@@ -23,8 +23,8 @@
         <script>
             var urlParams = new URLSearchParams(window.location.search);
             var scriptName = urlParams.has("script") ? urlParams.get("script") : "script";
-            Story.init(scriptName+".json", {luck:5}).then(function(scene) {
-                StoryDisplayer.init(Story, "story", true);
+            Story.createFromScriptUrl(scriptName+".json").then(function(story) {
+                StoryDisplayer.init(story, "story", true);
             });
         </script>
     </body>
