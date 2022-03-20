@@ -1,4 +1,4 @@
-Waifus = function() {
+Story = function() {
     var scenes = [];
     var images = [];
     var PE = {};
@@ -79,7 +79,7 @@ Waifus = function() {
                     choices.push(choice);
             }
             if (choices.length == 0) {
-                console.info("[Waifus] Aucun choix possible OmG");
+                console.info("[Story] Aucun choix possible OmG");
                 return null;
             }
             let choice = choices[parseInt(Math.random()*choices.length)];
@@ -90,7 +90,7 @@ Waifus = function() {
                 applyEffect(scenes[currentSceneId].choices[choiceId].effect);
                 goToScene(scenes[currentSceneId].choices[choiceId].id);
             } else {
-                console.info("[Waifus] Impossible d'effectuer ce choix");
+                console.info("[Story] Impossible d'effectuer ce choix");
                 return null;
             }
         }
@@ -104,45 +104,45 @@ Waifus = function() {
     };
 }();
 
-WaifusDisplayer = function() {
-    var waifus = null;
-    var waifusDiv = null;
-    var init = function(waifus_=Waifus, id="waifus", fullscreen=false) {
-        waifus = waifus_;
-        waifusDiv = document.getElementById(id);
-        if (waifusDiv)
-            waifusDiv.innerHTML = '<div class="images"></div> <ul class="choices"></ul> <fieldset class="speech-zone"> <legend class="speaker"></legend> <span class="speech"></span> </fieldset>';
-        if (waifus)
-            waifusDiv.addEventListener("click", function() {
-                let scene = waifus.nextReply();
+StoryDisplayer = function() {
+    var story = null;
+    var storyDiv = null;
+    var init = function(story_=Story, id="story", fullscreen=false) {
+        story = story_;
+        storyDiv = document.getElementById(id);
+        if (storyDiv)
+            storyDiv.innerHTML = '<div class="images"></div> <ul class="choices"></ul> <fieldset class="speech-zone"> <legend class="speaker"></legend> <span class="speech"></span> </fieldset>';
+        if (story)
+            storyDiv.addEventListener("click", function() {
+                let scene = story.nextReply();
                 if (scene) displayScene(scene);
             });
-        if (waifus)
-            displayScene(waifus.getScene());
+        if (story)
+            displayScene(story.getScene());
         if (fullscreen) {
             var fsButton = document.createElement("img");
             fsButton.src = "fullscreen.svg";
             fsButton.className = "fullscreen-button";
             fsButton.addEventListener("click", function() {
-                waifusDiv.requestFullscreen();
+                storyDiv.requestFullscreen();
             });
-            waifusDiv.appendChild(fsButton);
+            storyDiv.appendChild(fsButton);
             document.addEventListener("fullscreenchange", function() {
-                fsButton.style.display = document.fullscreenElement==waifusDiv ? "none" : "";
+                fsButton.style.display = document.fullscreenElement==storyDiv ? "none" : "";
             });
         }
     };
     var displayScene = function(scene) {
-        if (!waifusDiv) {
-            console.error("[WaifusDisplayer] No waifus-div");
+        if (!storyDiv) {
+            console.error("[StoryDisplayer] No story-div");
             return false;
         }
-        waifusDiv.style.backgroundImage = scene.background ? "url('"+scene.background+"')" : "";
-        waifusDiv.getElementsByClassName("speech")[0].innerText = scene.text || "";
-        waifusDiv.getElementsByClassName("speaker")[0].innerText = scene.speaker || "";
-        waifusDiv.getElementsByClassName("speaker")[0].style.backgroundColor = scene.color || "";
-        waifusDiv.getElementsByClassName("speaker")[0].style.display = (scene.speaker) ? "" : "none";
-        for (let oldImageC of waifusDiv.getElementsByClassName("image-container")) {
+        storyDiv.style.backgroundImage = scene.background ? "url('"+scene.background+"')" : "";
+        storyDiv.getElementsByClassName("speech")[0].innerText = scene.text || "";
+        storyDiv.getElementsByClassName("speaker")[0].innerText = scene.speaker || "";
+        storyDiv.getElementsByClassName("speaker")[0].style.backgroundColor = scene.color || "";
+        storyDiv.getElementsByClassName("speaker")[0].style.display = (scene.speaker) ? "" : "none";
+        for (let oldImageC of storyDiv.getElementsByClassName("image-container")) {
             oldImageC.style.opacity = 0;
             let oic = oldImageC;
             setTimeout(function() {
@@ -153,12 +153,12 @@ WaifusDisplayer = function() {
             let newImageC = document.createElement("div");
             newImageC.className = "image-container";
             newImageC.style.backgroundImage = "url('"+scene.image+"')";
-            waifusDiv.getElementsByClassName("images")[0].appendChild(newImageC);
+            storyDiv.getElementsByClassName("images")[0].appendChild(newImageC);
             getComputedStyle(newImageC).opacity; // force reflow
             newImageC.style.opacity = 1;
         }
-        //waifusDiv.getElementsByClassName("image-container")[0].style.display = (scene.image) ? "" : "none";
-        let choicesUl = waifusDiv.getElementsByClassName("choices")[0];
+        //storyDiv.getElementsByClassName("image-container")[0].style.display = (scene.image) ? "" : "none";
+        let choicesUl = storyDiv.getElementsByClassName("choices")[0];
         choicesUl.innerHTML = "";
         choicesUl.style.display = scene.choices && scene.choices.length > 0 ? "" : "none";
         if (scene.choices)
@@ -167,8 +167,8 @@ WaifusDisplayer = function() {
                 choiceLi.innerText = choice.text;
                 choicesUl.appendChild(choiceLi);
                 let choiceIndex = scene.choices.indexOf(choice);
-                if (waifus) choiceLi.addEventListener("click", function(e) {
-                    displayScene(waifus.nextScene(choiceIndex));
+                if (story) choiceLi.addEventListener("click", function(e) {
+                    displayScene(story.nextScene(choiceIndex));
                     e.stopPropagation();
                 });
             }

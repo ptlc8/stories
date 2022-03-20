@@ -2,16 +2,16 @@
 <html>
     <head>
         <meta charset="UTF-8" />
-        <title>Waifus !!!</title>
-        <link rel="stylesheet" href="waifus.css" />
+        <title>Une histoire !</title>
+        <link rel="stylesheet" href="story.css" />
         <style>
             html, body { width: 100%; height: 100%; margin: 0; }
-            #waifus {width: 100%; height: 100%; position: absolute; }
+            #story { width: 100%; height: 100%; position: absolute; }
         </style>
-        <script src="waifus.js"></script>
+        <script src="story.js"></script>
     </head>
     <body>
-        <div id="waifus">
+        <div id="story">
             <!--<div class="images"></div>
             <ul class="choices"></ul>
             <fieldset class="speech-zone">
@@ -22,8 +22,8 @@
         <script>
             var urlParams = new URLSearchParams(window.location.search);
             var scriptName = urlParams.has("script") ? urlParams.get("script") : "script";
-            Waifus.init(scriptName+".json", {luck:5}).then(function(scene) {
-                WaifusDisplayer.init(Waifus, "waifus", true);
+            Story.init(scriptName+".json", {luck:5}).then(function(scene) {
+                StoryDisplayer.init(Story, "story", true);
             });
         </script>
     </body>

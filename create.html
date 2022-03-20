@@ -4,13 +4,13 @@
         <meta charset="UTF-8" />
         <title>Création d'histoire</title>
         <link rel="stylesheet" href="create.css" />
-        <link rel="stylesheet" href="waifus.css" />
-        <script src="waifus.js"></script>
+        <link rel="stylesheet" href="story.css" />
+        <script src="story.js"></script>
     </head>
     <body>
         <div id="scenes"></div>
         <button id="add-scene">Ajouter une scène</button>
-        <div id="waifus"></div>
+        <div id="story"></div>
         <div id="scene-editor">
             <button id="next-reply">&gt;</button>
             <button id="previous-reply">&lt;</button>
@@ -44,8 +44,8 @@
             var currentSceneId = undefined;
             var currentReplyId = 0;
             var selectedImageId = undefined;
-            WaifusDisplayer.init(null, "waifus");
-            WaifusDisplayer.displayScene({speaker:"Créateur d'histoire",text:"Crée une nouvelle scène à gauche ⬅\nOu continue une histoire en collant le json en bas ⬇"});
+            StoryDisplayer.init(null, "story");
+            StoryDisplayer.displayScene({speaker:"Créateur d'histoire",text:"Crée une nouvelle scène à gauche ⬅\nOu continue une histoire en collant le json en bas ⬇"});
             document.getElementById("add-scene").addEventListener("click", function() {
                 scenes.push({background:"", replies:[{text:""}], atEnd:"choices", choices:[]});
                 refreshScenes();
@@ -112,7 +112,6 @@
                 if (scenes.length == 0) return alert("Il faut au moins une scène pour tester une histoire.");
                 var testerTab = open("tester.html");
                 testerTab.addEventListener("load", function(e) {
-                    console.log("hey");
                     testerTab.startTest({images:images, scenes:scenes}, {}); // TODO : stats
                 });
             });
@@ -202,7 +201,7 @@
             }
             function refreshScene() {
                 //TODO : condition x choices
-                WaifusDisplayer.displayScene({
+                StoryDisplayer.displayScene({
                     background: scenes[currentSceneId].background!==undefined ? images[scenes[currentSceneId].background] : undefined,
                     text: scenes[currentSceneId].replies[currentReplyId].text,
                     speaker: scenes[currentSceneId].replies[currentReplyId].speaker,
