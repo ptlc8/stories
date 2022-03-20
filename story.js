@@ -53,7 +53,6 @@ Story = function() {
         var goToScene = function(id) {
             currentSceneId = id;
             currentReplyId = 0;
-            
         };
         var nextScene = function(choiceId=null) {
             if (choiceId == null) {
@@ -90,14 +89,55 @@ Story = function() {
 }();
 
 StoryDisplayer = function() {
-    var story = null;
-    var storyDiv = null;
-    var init = function(story_=Story, id="story", fullscreen=false) {
-        story = story_;
-        storyDiv = document.getElementById(id);
+    var create = function(story_, storyDiv_, fullscreen=false) {
+        var story = story_;
+        var storyDiv = storyDiv_;
+        var displayScene = function(scene) {
+            if (!storyDiv) {
+                console.error("[StoryDisplayer] No story-div");
+                return false;
+            }
+            storyDiv.style.backgroundImage = scene.background ? "url('"+scene.background+"')" : "";
+            storyDiv.getElementsByClassName("speech")[0].innerText = scene.text || "";
+            storyDiv.getElementsByClassName("speaker")[0].innerText = scene.speaker || "";
+            storyDiv.getElementsByClassName("speaker")[0].style.backgroundColor = scene.color || "";
+            storyDiv.getElementsByClassName("speaker")[0].style.display = (scene.speaker) ? "" : "none";
+            for (let oldImageC of storyDiv.getElementsByClassName("image-container")) {
+                oldImageC.style.opacity = 0;
+                let oic = oldImageC;
+                setTimeout(function() {
+                    if (!oic.parentElement) oic.parentElement.removeChild(oic);
+                }, 1000*parseFloat(getComputedStyle(oic).transitionDuration.match(/([0-9]*\.[0-9]+|[0-9]+)/)[0]));
+            }
+            if (scene.image) {
+                let newImageC = document.createElement("div");
+                newImageC.className = "image-container";
+                newImageC.style.backgroundImage = "url('"+scene.image+"')";
+                storyDiv.getElementsByClassName("images")[0].appendChild(newImageC);
+                getComputedStyle(newImageC).opacity; // force reflow
+                newImageC.style.opacity = 1;
+            }
+            //storyDiv.getElementsByClassName("image-container")[0].style.display = (scene.image) ? "" : "none";
+            let choicesUl = storyDiv.getElementsByClassName("choices")[0];
+            choicesUl.innerHTML = "";
+            choicesUl.style.display = scene.choices && scene.choices.length > 0 ? "" : "none";
+            if (scene.choices)
+                for (let choice of scene.choices) {
+                    let choiceLi = document.createElement("li");
+                    choiceLi.innerText = choice.text;
+                    choicesUl.appendChild(choiceLi);
+                    let choiceIndex = scene.choices.indexOf(choice);
+                    if (story) choiceLi.addEventListener("click", function(e) {
+                        displayScene(story.nextScene(choiceIndex));
+                        e.stopPropagation();
+                    });
+                }
+            return true;
+        };
+        // init
         if (storyDiv)
             storyDiv.innerHTML = '<div class="images"></div> <ul class="choices"></ul> <fieldset class="speech-zone"> <legend class="speaker"></legend> <span class="speech"></span> </fieldset>';
-        if (story)
+        if (storyDiv && story)
             storyDiv.addEventListener("click", function() {
                 let scene = story.nextReply();
                 if (scene) displayScene(scene);
@@ -116,51 +156,7 @@ StoryDisplayer = function() {
                 fsButton.style.display = document.fullscreenElement==storyDiv ? "none" : "";
             });
         }
+        return {displayScene};
     };
-    var displayScene = function(scene) {
-        if (!storyDiv) {
-            console.error("[StoryDisplayer] No story-div");
-            return false;
-        }
-        storyDiv.style.backgroundImage = scene.background ? "url('"+scene.background+"')" : "";
-        storyDiv.getElementsByClassName("speech")[0].innerText = scene.text || "";
-        storyDiv.getElementsByClassName("speaker")[0].innerText = scene.speaker || "";
-        storyDiv.getElementsByClassName("speaker")[0].style.backgroundColor = scene.color || "";
-        storyDiv.getElementsByClassName("speaker")[0].style.display = (scene.speaker) ? "" : "none";
-        for (let oldImageC of storyDiv.getElementsByClassName("image-container")) {
-            oldImageC.style.opacity = 0;
-            let oic = oldImageC;
-            setTimeout(function() {
-                if (!oic.parentElement) oic.parentElement.removeChild(oic);
-            }, 1000*parseFloat(getComputedStyle(oic).transitionDuration.match(/([0-9]*\.[0-9]+|[0-9]+)/)[0]));
-        }
-        if (scene.image) {
-            let newImageC = document.createElement("div");
-            newImageC.className = "image-container";
-            newImageC.style.backgroundImage = "url('"+scene.image+"')";
-            storyDiv.getElementsByClassName("images")[0].appendChild(newImageC);
-            getComputedStyle(newImageC).opacity; // force reflow
-            newImageC.style.opacity = 1;
-        }
-        //storyDiv.getElementsByClassName("image-container")[0].style.display = (scene.image) ? "" : "none";
-        let choicesUl = storyDiv.getElementsByClassName("choices")[0];
-        choicesUl.innerHTML = "";
-        choicesUl.style.display = scene.choices && scene.choices.length > 0 ? "" : "none";
-        if (scene.choices)
-            for (let choice of scene.choices) {
-                let choiceLi = document.createElement("li");
-                choiceLi.innerText = choice.text;
-                choicesUl.appendChild(choiceLi);
-                let choiceIndex = scene.choices.indexOf(choice);
-                if (story) choiceLi.addEventListener("click", function(e) {
-                    displayScene(story.nextScene(choiceIndex));
-                    e.stopPropagation();
-                });
-            }
-        return true;
-    };
-    return {
-        init: init,
-        displayScene: displayScene
-    };
+    return {create};
 }();

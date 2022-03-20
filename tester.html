@@ -16,7 +16,7 @@
         <script>
             function startTest(data) {
                 var story = Story.create(data)
-                StoryDisplayer.init(story, "story", true);
+                StoryDisplayer.create(story, document.getElementById("story"), true);
             }
         </script>
     </body>

@@ -44,8 +44,8 @@
             var currentSceneId = undefined;
             var currentReplyId = 0;
             var selectedImageId = undefined;
-            StoryDisplayer.init(null, "story");
-            StoryDisplayer.displayScene({speaker:"Créateur d'histoire",text:"Crée une nouvelle scène à gauche ⬅\nOu continue une histoire en collant le json en bas ⬇"});
+            var displayer = StoryDisplayer.create(null, document.getElementById("story"));
+            displayer.displayScene({speaker:"Créateur d'histoire",text:"Crée une nouvelle scène à gauche ⬅\nOu continue une histoire en collant le json en bas ⬇"});
             document.getElementById("add-scene").addEventListener("click", function() {
                 scenes.push({background:"", replies:[{text:""}], atEnd:"choices", choices:[]});
                 refreshScenes();
@@ -201,7 +201,7 @@
             }
             function refreshScene() {
                 //TODO : condition x choices
-                StoryDisplayer.displayScene({
+                displayer.displayScene({
                     background: scenes[currentSceneId].background!==undefined ? images[scenes[currentSceneId].background] : undefined,
                     text: scenes[currentSceneId].replies[currentReplyId].text,
                     speaker: scenes[currentSceneId].replies[currentReplyId].speaker,
