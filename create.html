@@ -30,16 +30,6 @@
         <button id="add-image">Ajouter une image</button>
         <textarea id="json" placeholder="Coller un JSON ici..."></textarea>
         <script>
-            // fonction utile d'Ambi
-            function createElement(tag, properties={}, inner=[], eventListeners={}) {
-                let el = document.createElement(tag);
-                for (let p of Object.keys(properties)) if (p != "style") el[p] = properties[p];
-                if (properties.style) for (let p of Object.keys(properties.style)) el.style[p] = properties.style[p];
-                if (typeof inner == "object") for (let i of inner) el.appendChild(typeof i == "string" ? document.createTextNode(i) : i);
-                else el.innerText = inner;
-                for (let l of Object.keys(eventListeners)) el.addEventListener(l, eventListeners[l]);
-                return el
-            }
             var scenes = [];
             var currentSceneId = undefined;
             var currentReplyId = 0;
@@ -130,73 +120,52 @@
                 repliesDiv.innerText = "";
                 for (const [i,reply] of scenes[currentSceneId].replies.entries()) {
                     let iFix = i;
-                    var replyFS = document.createElement("fieldset");
-                    var legend = document.createElement("legend");
-                    legend.innerText = "Réplique "+i;
-                    replyFS.appendChild(legend);
-                    var text = document.createElement("input");
-                    text.placeholder = "Texte";
-                    text.value = reply.text || "";
-                    var textchange = function(e) {
-                        let old = scenes[currentSceneId].replies[i].text;
-                        scenes[currentSceneId].replies[i].text = e.target.value;
-                        if (old != e.target.value) {
-                            refreshScene();
-                            refreshJSON();
-                        }
-                    };
-                    text.addEventListener("keyup", textchange);
-                    replyFS.appendChild(text);
-                    var speaker = document.createElement("input");
-                    speaker.placeholder = "Locuteur";
-                    speaker.value = reply.speaker || "";
-                    var speakerchange = function(e) {
-                        let old = scenes[currentSceneId].replies[i].speaker;
-                        scenes[currentSceneId].replies[i].speaker = e.target.value;
-                        if (old != e.target.value) {
-                            refreshScene();
-                            refreshJSON();
-                        }
-                    };
-                    speaker.addEventListener("keyup", speakerchange);
-                    replyFS.appendChild(speaker);
-                    replyFS.appendChild(createElement("input", {type:"color",value:reply.color||"#008800"}, [], {change: function(e) {
-                        let old = scenes[currentSceneId].replies[i].color;
-                        scenes[currentSceneId].replies[i].color = e.target.value;
-                        if (old != e.target.value) {
-                            refreshScene();
-                            refreshJSON();
-                        }
-                    }}));
-                    var imageButton = document.createElement("button");
-                    imageButton.innerText = "Changer l'image";
-                    imageButton.addEventListener("click", function() {
-                        queryImageIndex().then(function(imageIndex) {
-                            scenes[currentSceneId].replies[iFix].image = imageIndex;
+                    repliesDiv.appendChild(createElement("fieldset", {}, [
+                        createElement("legend", {}, "Réplique "+i),
+                        createElement("input", {placeholder:"Texte", value:reply.text||""}, [], {keyup:function(e){
+                            let old = scenes[currentSceneId].replies[i].text;
+                            scenes[currentSceneId].replies[i].text = e.target.value;
+                            if (old != e.target.value) {
+                                refreshScene();
+                                refreshJSON();
+                            }
+                        }}),
+                        createElement("input", {placeholder:"Locuteur", value:reply.speaker||""}, [], {keyup:function(e){
+                            let old = scenes[currentSceneId].replies[i].speaker;
+                            scenes[currentSceneId].replies[i].speaker = e.target.value;
+                            if (old != e.target.value) {
+                                refreshScene();
+                                refreshJSON();
+                            }
+                        }}),
+                        createElement("input", {type:"color",value:reply.color||"#008800"}, [], {change:function(e){
+                            let old = scenes[currentSceneId].replies[i].color;
+                            scenes[currentSceneId].replies[i].color = e.target.value;
+                            if (old != e.target.value) {
+                                refreshScene();
+                                refreshJSON();
+                            }
+                        }}),
+                        createElement("button", {}, "Changer l'image", {click:function(){
+                            queryImageIndex().then(function(imageIndex) {
+                                scenes[currentSceneId].replies[iFix].image = imageIndex;
+                                refreshScene();
+                                refreshJSON();
+                                refreshScenes();
+                            });
+                        }}),
+                        createElement("button", {}, "Supprimer l'image", {click: function() {
+                            delete scenes[currentSceneId].replies[iFix].image;
                             refreshScene();
                             refreshJSON();
                             refreshScenes();
-                        });
-                    });
-                    replyFS.appendChild(imageButton);
-                    var deleteImageButton = document.createElement("button");
-                    deleteImageButton.innerText = "Supprimer l'image";
-                    deleteImageButton.addEventListener("click", function() {
-                        delete scenes[currentSceneId].replies[iFix].image;
-                        refreshScene();
-                        refreshJSON();
-                        refreshScenes();
-                    });
-                    replyFS.appendChild(deleteImageButton);
-                    var deleteReply = document.createElement("button");
-                    deleteReply.innerText = "Supprimer la réplique";
-                    deleteReply.addEventListener("click", function() {
-                        scenes[currentSceneId].replies.splice(iFix, 1);
-                        refreshReplies();
-                        refreshJSON();
-                    });
-                    replyFS.appendChild(deleteReply);
-                    repliesDiv.appendChild(replyFS);
+                        }}),
+                        createElement("button", {}, "Supprimer la réplique", {click: function() {
+                            scenes[currentSceneId].replies.splice(iFix, 1);
+                            refreshReplies();
+                            refreshJSON();
+                        }})
+                    ]));
                 }
             }
             function refreshScene() {
@@ -233,22 +202,16 @@
                 imagesDiv.innerHTML = "";
                 for (const [i, image] of images.entries()) {
                     let index = i;
-                    var fig = document.createElement("figure");
-                    var img = document.createElement("img");
-                    img.src = image;
-                    img.addEventListener("click", function(e) {
-                        selectedImageId = index;
-                    });
-                    fig.appendChild(img);
-                    var cap = document.createElement("figcaption");
-                    cap.innerText = "❌ Supprimer l'image";
-                    cap.addEventListener("click", function(e) {
-                        images.splice(index, 1);
-                        refreshImages();
-                        refreshJSON();
-                    });
-                    fig.appendChild(cap);
-                    imagesDiv.appendChild(fig);
+                    imagesDiv.appendChild(createElement("figure", {}, [
+                        createElement("img", {src:image}, [], {click:function(e){
+                            selectedImageId = index;
+                        }}),
+                        createElement("figcaption", {}, "❌ Supprimer l'image", {click:function(e){
+                            images.splice(index, 1);
+                            refreshImages();
+                            refreshJSON();
+                        }})
+                    ]));
                 }
             }
             function refreshChoices() {
@@ -259,48 +222,30 @@
                 if (scenes[currentSceneId].atEnd=="choices") {
                     for (const [i,choice] of scenes[currentSceneId].choices.entries()) {
                         let index = i;
-                        var choiceFS = document.createElement("fieldset");
-                        var legend = document.createElement("legend");
-                        legend.innerText = "Choix "+i;
-                        choiceFS.appendChild(legend);
-                        var text = document.createElement("input");
-                        text.placeholder = "Choix "+i;
-                        text.value = choice.text || "";
-                        text.addEventListener("keyup", function(e) {
-                            let old = scenes[currentSceneId].choices[i].text;
-                            scenes[currentSceneId].choices[i].text = e.target.value;
-                            if (old != e.target.value) {
-                                refreshScene();
+                        choicesDiv.appendChild(createElement("fieldset", {}, [
+                            createElement("legend", {}, "Choix "+i),
+                            createElement("input", {placeholder:"Choix "+i, value:choice.text||""}, [], {keyup:function(e){
+                                let old = scenes[currentSceneId].choices[i].text;
+                                scenes[currentSceneId].choices[i].text = e.target.value;
+                                if (old != e.target.value) {
+                                    refreshScene();
+                                    refreshJSON();
+                                }
+                            }}),
+                            createElement("input", {placeholder:"Id de la scène", type:"number", min:0, max:scenes.length-1, value:choice.id||""}, [], {change:function(e){
+                                let old = scenes[currentSceneId].choices[i].id;
+                                scenes[currentSceneId].choices[i].id = e.target.value;
+                                if (old != e.target.value) {
+                                    refreshScene();
+                                    refreshJSON();
+                                }
+                            }}),
+                            createElement("button", {}, "Supprimer le choix", {click:function(){
+                                scenes[currentSceneId].choices.splice(index, 1);
+                                refreshChoices();
                                 refreshJSON();
-                            }
-                        });
-                        choiceFS.appendChild(text);
-                        var targetId = document.createElement("input");
-                        targetId.placeholder = "Id de la scène";
-                        targetId.type = "number";
-                        targetId.min = 0;
-                        targetId.max = scenes.length-1;
-                        targetId.value = choice.id || "";
-                        let onChangeTargetId = function(e) {
-                            let old = scenes[currentSceneId].choices[i].id;
-                            scenes[currentSceneId].choices[i].id = e.target.value;
-                            if (old != e.target.value) {
-                                refreshScene();
-                                refreshJSON();
-                            }
-                        }
-                        targetId.addEventListener("keyup", onChangeTargetId);
-                        targetId.addEventListener("change", onChangeTargetId);
-                        choiceFS.appendChild(targetId);
-                        var deleteReply = document.createElement("button");
-                        deleteReply.innerText = "Supprimer le choix";
-                        deleteReply.addEventListener("click", function() {
-                            scenes[currentSceneId].choices.splice(index, 1);
-                            refreshChoices();
-                            refreshJSON();
-                        });
-                        choiceFS.appendChild(deleteReply);
-                        choicesDiv.appendChild(choiceFS);
+                            }})
+                        ]));
                     }
                 } else if (scenes[currentSceneId].atEnd=="redirect") {
                     var onChangeRedirect = function(e) {
@@ -322,7 +267,7 @@
                 scenesDiv.innerHTML = "";
                 for (const [i, scene] of scenes.entries()) {
                     let index = i;
-                    var fig = document.createElement("figure");
+                    var fig = createElement("figure");
                     let cvs = document.createElement("canvas");
                     drawScenePreview(cvs, scene).then(function() {
                         var ctx = cvs.getContext('2d');
@@ -345,14 +290,12 @@
                         refreshChoices();
                     });
                     fig.appendChild(cvs);
-                    var cap = document.createElement("figcaption");
-                    cap.innerText = "❌ Supprimer la scène";
-                    cap.addEventListener("click", function(e) {
+                    var cap = createElement("figcaption", {}, "❌ Supprimer la scène", {click:function(e){
                         if (!confirm("Supprimer cette scène ?")) return;
                         scenes.splice(index, 1);
                         refreshScenes();
                         refreshJSON();
-                    });
+                    }});
                     fig.appendChild(cap);
                     scenesDiv.appendChild(fig);
                 }

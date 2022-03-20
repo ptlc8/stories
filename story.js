@@ -102,35 +102,34 @@ StoryDisplayer = function() {
             storyDiv.getElementsByClassName("speaker")[0].innerText = scene.speaker || "";
             storyDiv.getElementsByClassName("speaker")[0].style.backgroundColor = scene.color || "";
             storyDiv.getElementsByClassName("speaker")[0].style.display = (scene.speaker) ? "" : "none";
-            for (let oldImageC of storyDiv.getElementsByClassName("image-container")) {
-                oldImageC.style.opacity = 0;
-                let oic = oldImageC;
-                setTimeout(function() {
-                    if (!oic.parentElement) oic.parentElement.removeChild(oic);
-                }, 1000*parseFloat(getComputedStyle(oic).transitionDuration.match(/([0-9]*\.[0-9]+|[0-9]+)/)[0]));
+            let oldImageC = storyDiv.getElementsByClassName("image")[0];
+            if ((oldImageC==undefined&&scene.image)||(oldImageC!=undefined && (!oldImageC.style.backgroundImage.includes(scene.image)))) {
+                if (oldImageC) {
+                    oldImageC.style.opacity = 0;
+                    oldImageC.className = "old-image";
+                    setTimeout(function() {
+                        if (oldImageC.parentElement && oldImageC.style.backgroundImage!="url('"+scene.image+"')")
+                            oldImageC.parentElement.removeChild(oldImageC);
+                    }, 1000*parseFloat(getComputedStyle(oldImageC).transitionDuration.match(/([0-9]*\.[0-9]+|[0-9]+)/)[0]));
+                }
+                if (scene.image) {
+                    let newImageC = createElement("div", {className:"image", style:{backgroundImage:"url('"+scene.image+"')"}});
+                    storyDiv.getElementsByClassName("images")[0].appendChild(newImageC);
+                    getComputedStyle(newImageC).opacity; // force reflow
+                    newImageC.style.opacity = 1;
+                }
             }
-            if (scene.image) {
-                let newImageC = document.createElement("div");
-                newImageC.className = "image-container";
-                newImageC.style.backgroundImage = "url('"+scene.image+"')";
-                storyDiv.getElementsByClassName("images")[0].appendChild(newImageC);
-                getComputedStyle(newImageC).opacity; // force reflow
-                newImageC.style.opacity = 1;
-            }
-            //storyDiv.getElementsByClassName("image-container")[0].style.display = (scene.image) ? "" : "none";
             let choicesUl = storyDiv.getElementsByClassName("choices")[0];
             choicesUl.innerHTML = "";
             choicesUl.style.display = scene.choices && scene.choices.length > 0 ? "" : "none";
             if (scene.choices)
                 for (let choice of scene.choices) {
-                    let choiceLi = document.createElement("li");
-                    choiceLi.innerText = choice.text;
-                    choicesUl.appendChild(choiceLi);
                     let choiceIndex = scene.choices.indexOf(choice);
-                    if (story) choiceLi.addEventListener("click", function(e) {
-                        displayScene(story.nextScene(choiceIndex));
+                    choicesUl.appendChild(createElement("li", {}, choice.text, {click:function(e){
+                        if (story)
+                            displayScene(story.nextScene(choiceIndex));
                         e.stopPropagation();
-                    });
+                    }}));
                 }
             return true;
         };
@@ -145,13 +144,9 @@ StoryDisplayer = function() {
         if (story)
             displayScene(story.getScene());
         if (fullscreen) {
-            var fsButton = document.createElement("img");
-            fsButton.src = "fullscreen.svg";
-            fsButton.className = "fullscreen-button";
-            fsButton.addEventListener("click", function() {
+            storyDiv.appendChild(createElement("img", {src:"fullscreen.svg", className:"fullscreen-button"}, [], {click:function(){
                 storyDiv.requestFullscreen();
-            });
-            storyDiv.appendChild(fsButton);
+            }}));
             document.addEventListener("fullscreenchange", function() {
                 fsButton.style.display = document.fullscreenElement==storyDiv ? "none" : "";
             });
@@ -160,3 +155,15 @@ StoryDisplayer = function() {
     };
     return {create};
 }();
+
+// fonction utile d'Ambi
+function createElement(tag, properties={}, inner=[], eventListeners={}) {
+    let el = document.createElement(tag);
+    for (let p of Object.keys(properties)) if (p != "style") el[p] = properties[p];
+    if (properties.style) for (let p of Object.keys(properties.style)) el.style[p] = properties.style[p];
+    if (properties.dataset) for (let p of Object.keys(properties.dataset)) el.dataset[p] = properties.dataset[p];
+    if (typeof inner == "object") for (let i of inner) el.appendChild(typeof i == "string" ? document.createTextNode(i) : i);
+    else el.innerText = inner;
+    for (let l of Object.keys(eventListeners)) el.addEventListener(l, eventListeners[l]);
+    return el;
+}
