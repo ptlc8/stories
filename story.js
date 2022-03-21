@@ -116,13 +116,20 @@ Story = function() {
                     return void logError("Opérateur d'effet inconnu : "+effect.op);
             }
         };
+        var applyEffects = function(effects) {
+            if (!effects) return;
+            for (let effect of effects) applyEffect(effect);
+        }
         var nextReply = function() {
             currentReplyId++;
-            if (currentReplyId < scenes[currentSceneId].replies.length) return getScene();
+            var scene;
+            if (currentReplyId < scenes[currentSceneId].replies.length) scene = getScene();
             else if (scenes[currentSceneId].atEnd == "redirect") {
                 goToScene(scenes[currentSceneId].redirect);
-                return getScene();
+                scene = getScene();
             } else return null;
+            applyEffects(scenes[currentSceneId].replies[currentReplyId].effects);
+            return scene;
         };
         var goToScene = function(id) {
             currentSceneId = id;
@@ -153,14 +160,10 @@ Story = function() {
             }
             return getScene();
         };
-        var getVars = function() {
-            return vars;
-        };
         return {
             nextReply: nextReply,
             nextScene: nextScene,
-            getScene: getScene,
-            getVars: getVars
+            getScene: getScene
         };
     };
     return {create, createFromScriptUrl};
@@ -206,13 +209,13 @@ StoryDisplayer = function() {
                         e.stopPropagation();
                     }}));
                 }
-            refreshVars();
+            refreshVars(scene.vars);
             return true;
         };
-        var refreshVars = function() {
+        var refreshVars = function(vars) {
             if (!story) return;
             varsDiv = storyDiv.getElementsByClassName("vars")[0];
-            for (const [name,variable] of Object.entries(story.getVars())) {
+            for (const [name,variable] of Object.entries(vars)) {
                 if (variable.public) {
                     let varDiv = varsDiv.getElementsByClassName("var-"+name)[0];
                     if (varDiv)
@@ -225,7 +228,7 @@ StoryDisplayer = function() {
                     ]));
                 }
             }
-            for (const [name,variable] of Object.entries(story.getVars())) {
+            for (const [name,variable] of Object.entries(vars)) {
                 if (!variable.public) {
                     let varDiv = varsDiv.getElementsByClassName("var-"+name)[0];
                     if (varDiv) {

@@ -181,7 +181,8 @@
                     speaker: scenes[currentSceneId].replies[currentReplyId].speaker,
                     color: scenes[currentSceneId].replies[currentReplyId].color,
                     image: scenes[currentSceneId].replies[currentReplyId].image!==undefined ? images[scenes[currentSceneId].replies[currentReplyId].image] : undefined,
-                    choices: scenes[currentSceneId].replies.length-1 <= currentReplyId ? scenes[currentSceneId].choices : []
+                    choices: scenes[currentSceneId].replies.length-1 <= currentReplyId ? scenes[currentSceneId].choices : [],
+                    vars: vars
                 });
             }
             function queryImageIndex() {
