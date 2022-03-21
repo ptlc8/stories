@@ -1,6 +1,12 @@
 Story = function() {
+    var logError = function(error) {
+        console.error("[Story] "+error);
+    };
+    var logInfo = function(info) {
+        console.info("[Story] "+info);
+    };
     var createFromScriptUrl = function(scriptUrl) {
-        return promise = new Promise(function(resolve, reject) {
+        return new Promise(function(resolve, reject) {
             let xhr = new XMLHttpRequest();
             xhr.open("GET", scriptUrl);
             xhr.onreadystatechange = (function(){
@@ -34,13 +40,81 @@ Story = function() {
                 vars: vars
             };
         };
+        var getValue = function(value) {
+            if (value.var) {
+                if (!vars[value.var])
+                    return void logError("Variable inexistante : "+value.var);
+                if (vars[value.var].type!="int")
+                    return void logError("Variable de type non-entier : "+value.var);
+                return vars[value.var].value;
+            }
+            if (value.op) {
+                switch(value.op) {
+                    case "+":
+                        return getValue(value.a) + getValue(value.b);
+                    case "-":
+                        return getValue(value.a) - getValue(value.b);
+                    case "*":
+                        return getValue(value.a) * getValue(value.b);
+                    case "%":
+                        return getValue(value.a) % getValue(value.b);
+                    default:
+                        return void logError("Opérateur arithmétique inconnu : "+value.op);
+                }
+            }
+            return value;
+        };
         var testCondition = function(condition) {
-            if (!condition) return true;
-            with (vars) return (eval(condition));
+            if (condition===undefined) return true;
+            if (condition.var) {
+                if (!vars[condition.var])
+                    return void logError("Variable inexistante : "+condition.var);
+                if (vars[condition.var].type!="boolean")
+                    return void logError("Variable de type non-booléen : "+condition.var);
+                return vars[condition.var].value;
+            }
+            if (condition.op) {
+                switch(condition.op) {
+                    case "<":
+                        return getValue(condition.a) < getValue(condition.b);
+                    case ">":
+                        return getValue(condition.a) > getValue(condition.b);
+                    case "==":
+                        return getValue(condition.a) == getValue(condition.b);
+                    case "!=":
+                        return getValue(condition.a) != getValue(condition.b);
+                    case ">=":
+                        return getValue(condition.a) >= getValue(condition.b);
+                    case "<=":
+                        return getValue(condition.a) <= getValue(condition.b);
+                    case "!":
+                        return !testCondition(condition.a);
+                    case "&&":
+                        return testCondition(condition.a) && testCondition(condition.b);
+                    case "||":
+                        return testCondition(condition.a) || testCondition(condition.b);
+                    default:
+                        return void logError("Opérateur de comparaison ou logique inconnu : "+condition.op);
+                }
+            }
+            return condition;
         };
         var applyEffect = function(effect) {
             if (!effect) return;
-            with (vars) eval(effect);
+            switch(effect.op) {
+                case "set":
+                    if (!vars[effect.a])
+                        return void logError("Variable inexistante : "+effect.a);
+                    if (vars[effect.a].type=="int")
+                        vars[effect.a].value = getValue(effect.b);
+                    else if (vars[effect.a].type="boolean")
+                        vars[effect.a].value = testCondition(effect.b);
+                    else
+                        logError("Type de variable non-mutable : "+vars[effect.a].type);
+                    return;
+                default:
+                    return void logError("Opérateur d'effet inconnu : "+effect.op);
+            }
         };
         var nextReply = function() {
             currentReplyId++;
@@ -62,7 +136,7 @@ Story = function() {
                         choices.push(choice);
                 }
                 if (choices.length == 0) {
-                    console.info("[Story] Aucun choix possible OmG");
+                    logInfo("Aucun choix possible OmG");
                     return null;
                 }
                 let choice = choices[parseInt(Math.random()*choices.length)];
@@ -73,7 +147,7 @@ Story = function() {
                     applyEffect(scenes[currentSceneId].choices[choiceId].effect);
                     goToScene(scenes[currentSceneId].choices[choiceId].id);
                 } else {
-                    console.info("[Story] Impossible d'effectuer ce choix");
+                    logInfo("Impossible d'effectuer ce choix");
                     return null;
                 }
             }
