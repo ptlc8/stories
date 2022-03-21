@@ -167,15 +167,11 @@ Story = function() {
 }();
 
 StoryDisplayer = function() {
-    var create = function(story_, storyDiv_, fullscreen=false) {
-        var story = story_;
+    var create = function(storyDiv_, story_, fullscreen=false) {
         var storyDiv = storyDiv_;
-        var debug = true;
+        var story = story_;
+        var debug = false;
         var displayScene = function(scene) {
-            if (!storyDiv) {
-                console.error("[StoryDisplayer] No story-div");
-                return false;
-            }
             storyDiv.style.backgroundImage = scene.background ? "url('"+scene.background+"')" : "";
             storyDiv.getElementsByClassName("speech")[0].innerText = scene.text || "";
             storyDiv.getElementsByClassName("speaker")[0].innerText = scene.speaker || "";
@@ -229,27 +225,40 @@ StoryDisplayer = function() {
                     ]));
                 }
             }
-            if (debug) {
-                for (const [name,variable] of Object.entries(story.getVars())) {
-                    if (!variable.public) {
-                        let varDiv = varsDiv.getElementsByClassName("var-"+name)[0];
-                        if (varDiv)
+            for (const [name,variable] of Object.entries(story.getVars())) {
+                if (!variable.public) {
+                    let varDiv = varsDiv.getElementsByClassName("var-"+name)[0];
+                    if (varDiv) {
+                        if (debug)
                             varDiv.innerText = name+" : "+variable.value;
-                        else varsDiv.appendChild(createElement("span", {className:"var-"+name}, name+" : "+variable.value));
+                        else varDiv.parentElement.removeChild(varDiv);
+                    } else if (debug) {
+                        varsDiv.appendChild(createElement("span", {className:"var-"+name}, name+" : "+variable.value));
                     }
                 }
             }
         };
         // init
-        if (storyDiv) {
-            storyDiv.classList.add("story");
-            storyDiv.innerHTML = '<div class="images"></div> <ul class="choices"></ul> <fieldset class="speech-zone"> <legend class="speaker"></legend> <span class="speech"></span> </fieldset> <div class="vars"></div>';
-        }
-        if (storyDiv && story)
-            storyDiv.addEventListener("click", function() {
-                let scene = story.nextReply();
-                if (scene) displayScene(scene);
-            });
+        storyDiv.classList.add("story");
+        storyDiv.appendChild(createElement("div", {className:"images"}));
+        storyDiv.appendChild(createElement("ul", {className:"choices"}));
+        storyDiv.appendChild(createElement("fieldset", {className:"speech-zone"}, [
+            createElement("legend", {className:"speaker"}),
+            createElement("span", {className:"speech"})
+        ]));
+        storyDiv.appendChild(createElement("div", {className:"vars"}));
+        storyDiv.addEventListener("click", function() {
+            if (!story) return;
+            let scene = story.nextReply();
+            if (scene) displayScene(scene);
+        });
+        storyDiv.tabIndex = 0;
+        storyDiv.addEventListener("keypress", function(e) {
+            if(e.keyCode==68 && e.shiftKey) {
+                debug = !debug;
+                refreshVars();
+            }
+        });
         if (story)
             displayScene(story.getScene());
         if (fullscreen) {

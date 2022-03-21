@@ -28,20 +28,25 @@
         </div>
         <div id="images"></div>
         <button id="add-image">Ajouter une image</button>
+        <div id="vars-editor">
+            <button id="add-var">Ajouter une variable</button>
+            <div id="vars"></div>
+        </div>
         <textarea id="json" placeholder="Coller un JSON ici..."></textarea>
         <script>
             var scenes = [];
+            var images = [];
+            var vars = {};
             var currentSceneId = undefined;
             var currentReplyId = 0;
             var selectedImageId = undefined;
-            var displayer = StoryDisplayer.create(null, document.getElementById("story"));
+            var displayer = StoryDisplayer.create(document.getElementById("story"), null);
             displayer.displayScene({speaker:"Créateur d'histoire",text:"Crée une nouvelle scène à gauche ⬅\nOu continue une histoire en collant le json en bas ⬇"});
             document.getElementById("add-scene").addEventListener("click", function() {
                 scenes.push({background:"", replies:[{text:""}], atEnd:"choices", choices:[]});
                 refreshScenes();
                 refreshJSON();
             });
-            var images = [];
             document.getElementById("add-image").addEventListener("click", function() {
                 var imageSrc = prompt("Entre l'URL de l'image à ajouter 🖼");
                 if (!imageSrc) return;
@@ -102,11 +107,11 @@
                 if (scenes.length == 0) return alert("Il faut au moins une scène pour tester une histoire.");
                 var testerTab = open("tester.html");
                 testerTab.addEventListener("load", function(e) {
-                    testerTab.startTest({images:images, scenes:scenes}, {}); // TODO : stats
+                    testerTab.startTest({images:images, scenes:scenes, vars:vars});
                 });
             });
             document.getElementById("save").addEventListener("click", function() {
-                localStorage.story = JSON.stringify({images:images, scenes:scenes});
+                localStorage.story = JSON.stringify({images:images, scenes:scenes, vars:vars});
                 alert("L'histoire a bien été enregistrée sur votre navigateur 💾");
             });
             window.addEventListener("load", function() {
@@ -240,6 +245,18 @@
                                     refreshJSON();
                                 }
                             }}),
+                            createElement("br"),
+                            createElement("span", {}, choice.condition==undefined?"":"si "+getTextCondition(choice.condition)),
+                            createElement("button", {style:{display:choice.condition==undefined?"none":""}}, "Changer la condition", {click:function(){
+                                alert("work in progress");// TODO
+                            }}),
+                            createElement("button", {}, choice.condition==undefined?"Ajouter une condition":"Supprimer la condition", {click:function(){
+                                if (choice.condition==undefined)
+                                    scenes[currentSceneId].choices[i].condition=true;
+                                else delete choice.condition;
+                                refreshChoices();
+                                refreshJSON();
+                            }}),
                             createElement("button", {}, "Supprimer le choix", {click:function(){
                                 scenes[currentSceneId].choices.splice(index, 1);
                                 refreshChoices();
@@ -318,12 +335,13 @@
                 return promise;
             }
             function refreshJSON() {
-                document.getElementById("json").value = JSON.stringify({images:images, scenes:scenes});
+                document.getElementById("json").value = JSON.stringify({images:images, scenes:scenes, vars:vars});
             }
             function loadFromJSON(json) {
                 var script = JSON.parse(json) || {};
                 images = script.images || [];
                 scenes = script.scenes || [];
+                vars = script.vars || {};
                 currentSceneId = 0;
                 currentReplyId = 0;
                 refreshScene();
@@ -331,6 +349,98 @@
                 refreshImages();
                 refreshScenes();
                 refreshChoices();
+                refreshVars();
+            }
+            function refreshVars() {
+                var varsDiv = document.getElementById("vars");
+                varsDiv.innerHTML = "";
+                for (const [name, variable] of Object.entries(vars)) {
+                    varsDiv.appendChild(createElement("div", {style:{color:variable.color}}, [
+                        createElement("span", {}, (variable.type=="boolean"?("<"+name+">"):variable.type=="int"?("("+name+")"):("["+name+"]"))+" = "+variable.value),
+                        createElement("button", {title:"Supprimer"}, "❌", {click:function(e){
+                            delete vars[name];
+                            refreshVars();
+                            refreshJSON();
+                        }}),
+                        createElement("button", {title:"Modifier"}, "✏️", {click:function(e){
+                            // TODO
+                            refreshVars();
+                            refreshJSON();
+                        }})
+                    ]));
+                }
+            }
+            document.getElementById("add-var").addEventListener("click", function() {
+                var nameInput, typeInput, intValueInput, booleanValueInput, errorSpan;
+                createPopup({}, [
+                    createElement("span", {}, "Nouvelle variable"),
+                    nameInput = createElement("input", {type:"text",placeholder:"Nom de la variable"}),
+                    typeInput = createElement("select", {}, [
+                        createElement("option", {value:"int"}, "Entier"),
+                        createElement("option", {value:"boolean"}, "Booléen")
+                    ], {change:function(e){
+                        intValueInput.style.display = e.target.value=="int" ? "" : "none";
+                        booleanValueInput.style.display = e.target.value=="boolean" ? "" : "none";
+                    }}),
+                    intValueInput = createElement("input", {type:"number",placeholder:"Valeur de base",value:0}),
+                    booleanValueInput = createElement("select", {style:{display:"none"}}, [
+                        createElement("option", {value:"false"}, "Faux"),
+                        createElement("option", {value:"true"}, "Vrai")
+                    ]),
+                    errorSpan = createElement("sub", {}),
+                    createElement("button", {}, "Ajouter", {click:function(e){
+                        if (nameInput.value=="") {
+                            errorSpan.innerText = "Il faut un nom de variable";
+                        } else if (vars[nameInput.value]) {
+                            errorSpan.innerText = "Cette variable existe déjà";
+                        } else {
+                            vars[nameInput.value] = typeInput.value=="boolean" ? {type:"boolean",value:booleanValueInput.value=="true"} : {type:"int",value:parseInt(intValueInput.value)};
+                            closePopup(e.target.parentElement);
+                        }
+                    }})
+                ]).then(function(){
+                    refreshVars();
+                    refreshJSON();
+                });
+            });
+            function createPopup(properties={}, inner=[]) {
+				return new Promise(function(resolve,reject) {
+					properties.className = properties.className ? properties.className+" popup" : "popup";
+					document.body.appendChild(createElement("div", {className:"popup-container"}, [
+						createElement("div", properties, [
+							createElement("span", {className:"close-button"}, "❌", {click:function(){
+								this.parentElement.parentElement.parentElement.removeChild(this.parentElement.parentElement);
+								resolve();
+							}})
+						].concat(inner), {click:function(e){
+							e.stopPropagation();
+						}})
+					], {click:function(){
+						this.parentElement.removeChild(this);
+						resolve();
+					}}));
+				});
+			}
+            function closePopup(popupDiv) {
+                popupDiv.parentElement.click();
+            }
+            function getTextCondition(condition) {
+                if (condition.var)
+                    return condition.var;
+                if (["<",">","!=","==","<=",">="].includes(condition.op))
+                    return "("+getTextExpression(condition.a)+condition.op+getTextExpression(condition.b)+")";
+                if (["&&","||"].includes(condition.op))
+                    return "("+getTextCondition(condition.a)+condition.op+getTextCondition(condition.b)+")";
+                if (["!"].includes(condition.op))
+                    return condition.op+getTextCondition(condition.a);
+                return condition;
+            }
+            function getTextExpression(expression) {
+                if (expression.var)
+                    return expression.var;
+                if (["+","-","*","%"].includes(expression.op))
+                    return "("+getTextExpression(expression.a)+expression.op+getTextExpression(expression.b)+")";
+                return expression;
             }
         </script>
     </body>
