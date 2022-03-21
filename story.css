@@ -93,6 +93,9 @@
     text-align: center;
     margin: 0.2em;
 }
+.vars > span {
+    display: block;
+}
 .vars > div > div {
     height: 6em;
     background: whitesmoke;
@@ -100,11 +103,13 @@
     width: 1em;
     overflow: hidden;
     position: relative;
+    margin : auto;
 }
 .vars > div > div > div {
     width: 1em;
     position: absolute;
     bottom: 0;
+    transition: height 2s ease;
 }
 @media (orientation: portrait) {
     .choices > * {

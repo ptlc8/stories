@@ -153,10 +153,14 @@ Story = function() {
             }
             return getScene();
         };
+        var getVars = function() {
+            return vars;
+        };
         return {
             nextReply: nextReply,
             nextScene: nextScene,
-            getScene: getScene
+            getScene: getScene,
+            getVars: getVars
         };
     };
     return {create, createFromScriptUrl};
@@ -166,6 +170,7 @@ StoryDisplayer = function() {
     var create = function(story_, storyDiv_, fullscreen=false) {
         var story = story_;
         var storyDiv = storyDiv_;
+        var debug = true;
         var displayScene = function(scene) {
             if (!storyDiv) {
                 console.error("[StoryDisplayer] No story-div");
@@ -205,12 +210,40 @@ StoryDisplayer = function() {
                         e.stopPropagation();
                     }}));
                 }
+            refreshVars();
             return true;
+        };
+        var refreshVars = function() {
+            if (!story) return;
+            varsDiv = storyDiv.getElementsByClassName("vars")[0];
+            for (const [name,variable] of Object.entries(story.getVars())) {
+                if (variable.public) {
+                    let varDiv = varsDiv.getElementsByClassName("var-"+name)[0];
+                    if (varDiv)
+                        varDiv.children[0].children[0].style.height = variable.value/variable.max*100+"%";
+                    else varsDiv.appendChild(createElement("div", {className:"var-"+name}, [
+                        createElement("div", {}, [
+                            createElement("div", {style:{backgroundColor:variable.color,height:variable.value/variable.max*100+"%"}})
+                        ]),
+                        createElement("span", {}, name)
+                    ]));
+                }
+            }
+            if (debug) {
+                for (const [name,variable] of Object.entries(story.getVars())) {
+                    if (!variable.public) {
+                        let varDiv = varsDiv.getElementsByClassName("var-"+name)[0];
+                        if (varDiv)
+                            varDiv.innerText = name+" : "+variable.value;
+                        else varsDiv.appendChild(createElement("span", {className:"var-"+name}, name+" : "+variable.value));
+                    }
+                }
+            }
         };
         // init
         if (storyDiv) {
             storyDiv.classList.add("story");
-            storyDiv.innerHTML = '<div class="images"></div> <ul class="choices"></ul> <fieldset class="speech-zone"> <legend class="speaker"></legend> <span class="speech"></span> </fieldset>';
+            storyDiv.innerHTML = '<div class="images"></div> <ul class="choices"></ul> <fieldset class="speech-zone"> <legend class="speaker"></legend> <span class="speech"></span> </fieldset> <div class="vars"></div>';
         }
         if (storyDiv && story)
             storyDiv.addEventListener("click", function() {
