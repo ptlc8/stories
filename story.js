@@ -208,8 +208,10 @@ StoryDisplayer = function() {
             return true;
         };
         // init
-        if (storyDiv)
+        if (storyDiv) {
+            storyDiv.classList.add("story");
             storyDiv.innerHTML = '<div class="images"></div> <ul class="choices"></ul> <fieldset class="speech-zone"> <legend class="speaker"></legend> <span class="speech"></span> </fieldset>';
+        }
         if (storyDiv && story)
             storyDiv.addEventListener("click", function() {
                 let scene = story.nextReply();
