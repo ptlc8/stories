@@ -122,15 +122,15 @@ const Story = (function() {
             for (let effect of effects) applyEffect(effect);
         };
         var nextReply = function() {
-            currentReplyId++;
-            var state;
-            if (currentReplyId < scenes[currentSceneId].replies.length) state = getState();
-            else if (scenes[currentSceneId].atEnd == "redirect") {
+            if (currentReplyId+1 < scenes[currentSceneId].replies.length) {
+                currentReplyId++;
+                console.log("effects at "+currentReplyId+" ? "+(!(!(scenes[currentSceneId].replies[currentReplyId].effects))));
+                applyEffects(scenes[currentSceneId].replies[currentReplyId].effects);
+            } else if (scenes[currentSceneId].atEnd == "redirect") {
                 goToScene(scenes[currentSceneId].redirect);
-                state = getState();
-            } else return null;
-            applyEffects(scenes[currentSceneId].replies[currentReplyId].effects);
-            return state;
+                applyEffects(scenes[currentSceneId].replies[currentReplyId].effects);
+            }
+            return getState();
         };
         var goToScene = function(id) {
             currentSceneId = id;
@@ -262,7 +262,7 @@ const StoryDisplayer = (function() {
         storyDiv.addEventListener("keypress", function(e) {
             if(e.keyCode==68 && e.shiftKey) {
                 debug = !debug;
-                refreshVars();
+                if (story) displayState(story.getState());
             }
         });
         if (story)

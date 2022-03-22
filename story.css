@@ -3,6 +3,7 @@
     background-repeat: no-repeat;
     background-size: cover;
     background-position: center;
+    font-size: large;
 }
 .speech-zone {
     position: absolute;
@@ -24,11 +25,9 @@
     color: whitesmoke;
     border-radius: 1em;
     font-weight: bold;
-    font-size: large;
 }
 .speech {
     color: black;
-    font-size: large;
 }
 .choices {
     color: black;
@@ -43,7 +42,6 @@
     border-radius: 2em 0 0 2em;
     transform: translateY(-50%);
     margin: 0;
-    font-size: large;
 }
 .choices > * {
     margin: 10px;
@@ -52,6 +50,11 @@
     background-color: rgb(100,100,100);
     background-color: rgba(100,100,100,.6);
     cursor: pointer;
+    transition: transform .5s ease;
+    transform: scale(1);
+}
+.choices > :hover {
+    transform: scale(1.1);
 }
 .images {
     position: absolute;
@@ -112,7 +115,42 @@
     transition: height 2s ease;
 }
 @media (orientation: portrait) {
+    .choices {
+        background-color: unset;
+        padding: 0;
+    }
     .choices > * {
-        margin: 20px 10px;
+        margin: 10px 5px;
+        border-radius: 1em 0 0 1em;
+        margin-right: 0;
+        background-color: rgb(200,200,200);
+        background-color: rgba(200,200,200,.6);
+        animation: clickme 4s 1s infinite ease;
+    }
+    .choices > :nth-child(4n) {
+        animation: clickme 4s 0s infinite ease;
+    }
+    .choices > :nth-child(4n+1) {
+        animation: clickme 4s 1s infinite ease;
+    }
+    .choices > :nth-child(4n+2) {
+        animation: clickme 4s 2s infinite ease;
+    }
+    .choices > :nth-child(4n+3) {
+        animation: clickme 4s 3s infinite ease;
+    }
+}
+@keyframes clickme {
+    0% {
+        transform: scale(1);
+    }
+    30% {
+        transform: scale(1.05);
+    }
+    60% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1);
     }
 }
