@@ -1,4 +1,5 @@
-Story = function() {
+"use strict";
+const Story = (function() {
     var logError = function(error) {
         console.error("[Story] "+error);
     };
@@ -9,11 +10,11 @@ Story = function() {
         return new Promise(function(resolve, reject) {
             let xhr = new XMLHttpRequest();
             xhr.open("GET", scriptUrl);
-            xhr.onreadystatechange = (function(){
+            xhr.onreadystatechange = function(){
                 if (this.status == 200 && this.readyState == XMLHttpRequest.DONE) {
                     resolve(create(JSON.parse(this.response)));
                 }
-            });
+            };
             xhr.send();
         });
     };
@@ -23,11 +24,11 @@ Story = function() {
         var vars = scriptData.vars || {};
         var currentSceneId = 0;
         var currentReplyId = 0;
-        var getScene = function() {
+        var getState = function() {
             let choices = [];
             if (scenes[currentSceneId].choices && scenes[currentSceneId].replies.length-1 <= currentReplyId)
                 for (let choice of scenes[currentSceneId].choices) {
-                    if (testCondition(choice.condition))
+                    if (testExpression(choice.condition))
                         choices.push(choice);
                 }
             return {
@@ -40,7 +41,7 @@ Story = function() {
                 vars: vars
             };
         };
-        var getValue = function(value) {
+        var calcExpression = function(value) {
             if (value.var) {
                 if (!vars[value.var])
                     return void logError("Variable inexistante : "+value.var);
@@ -51,20 +52,20 @@ Story = function() {
             if (value.op) {
                 switch(value.op) {
                     case "+":
-                        return getValue(value.a) + getValue(value.b);
+                        return calcExpression(value.a) + calcExpression(value.b);
                     case "-":
-                        return getValue(value.a) - getValue(value.b);
+                        return calcExpression(value.a) - calcExpression(value.b);
                     case "*":
-                        return getValue(value.a) * getValue(value.b);
+                        return calcExpression(value.a) * calcExpression(value.b);
                     case "%":
-                        return getValue(value.a) % getValue(value.b);
+                        return calcExpression(value.a) % calcExpression(value.b);
                     default:
                         return void logError("Opérateur arithmétique inconnu : "+value.op);
                 }
             }
             return value;
         };
-        var testCondition = function(condition) {
+        var testExpression = function(condition) {
             if (condition===undefined) return true;
             if (condition.var) {
                 if (!vars[condition.var])
@@ -76,23 +77,23 @@ Story = function() {
             if (condition.op) {
                 switch(condition.op) {
                     case "<":
-                        return getValue(condition.a) < getValue(condition.b);
+                        return calcExpression(condition.a) < calcExpression(condition.b);
                     case ">":
-                        return getValue(condition.a) > getValue(condition.b);
+                        return calcExpression(condition.a) > calcExpression(condition.b);
                     case "==":
-                        return getValue(condition.a) == getValue(condition.b);
+                        return calcExpression(condition.a) == calcExpression(condition.b);
                     case "!=":
-                        return getValue(condition.a) != getValue(condition.b);
+                        return calcExpression(condition.a) != calcExpression(condition.b);
                     case ">=":
-                        return getValue(condition.a) >= getValue(condition.b);
+                        return calcExpression(condition.a) >= calcExpression(condition.b);
                     case "<=":
-                        return getValue(condition.a) <= getValue(condition.b);
+                        return calcExpression(condition.a) <= calcExpression(condition.b);
                     case "!":
-                        return !testCondition(condition.a);
+                        return !testExpression(condition.a);
                     case "&&":
-                        return testCondition(condition.a) && testCondition(condition.b);
+                        return testExpression(condition.a) && testExpression(condition.b);
                     case "||":
-                        return testCondition(condition.a) || testCondition(condition.b);
+                        return testExpression(condition.a) || testExpression(condition.b);
                     default:
                         return void logError("Opérateur de comparaison ou logique inconnu : "+condition.op);
                 }
@@ -106,9 +107,9 @@ Story = function() {
                     if (!vars[effect.a])
                         return void logError("Variable inexistante : "+effect.a);
                     if (vars[effect.a].type=="int")
-                        vars[effect.a].value = getValue(effect.b);
-                    else if (vars[effect.a].type="boolean")
-                        vars[effect.a].value = testCondition(effect.b);
+                        vars[effect.a].value = calcExpression(effect.b);
+                    else if (vars[effect.a].type=="boolean")
+                        vars[effect.a].value = testExpression(effect.b);
                     else
                         logError("Type de variable non-mutable : "+vars[effect.a].type);
                     return;
@@ -119,17 +120,17 @@ Story = function() {
         var applyEffects = function(effects) {
             if (!effects) return;
             for (let effect of effects) applyEffect(effect);
-        }
+        };
         var nextReply = function() {
             currentReplyId++;
-            var scene;
-            if (currentReplyId < scenes[currentSceneId].replies.length) scene = getScene();
+            var state;
+            if (currentReplyId < scenes[currentSceneId].replies.length) state = getState();
             else if (scenes[currentSceneId].atEnd == "redirect") {
                 goToScene(scenes[currentSceneId].redirect);
-                scene = getScene();
+                state = getState();
             } else return null;
             applyEffects(scenes[currentSceneId].replies[currentReplyId].effects);
-            return scene;
+            return state;
         };
         var goToScene = function(id) {
             currentSceneId = id;
@@ -139,7 +140,7 @@ Story = function() {
             if (choiceId == null) {
                 let choices = [];
                 for (let choice of scenes[currentSceneId].choices) {
-                    if (testCondition(choice.condition))
+                    if (testExpression(choice.condition))
                         choices.push(choice);
                 }
                 if (choices.length == 0) {
@@ -150,7 +151,7 @@ Story = function() {
                 applyEffect(choice.effect);
                 goToScene(choice.id);
             } else {
-                if (testCondition(scenes[currentSceneId].choices[choiceId].condition)) {
+                if (testExpression(scenes[currentSceneId].choices[choiceId].condition)) {
                     applyEffect(scenes[currentSceneId].choices[choiceId].effect);
                     goToScene(scenes[currentSceneId].choices[choiceId].id);
                 } else {
@@ -158,40 +159,43 @@ Story = function() {
                     return null;
                 }
             }
-            return getScene();
+            return getState();
         };
         return {
             nextReply: nextReply,
             nextScene: nextScene,
-            getScene: getScene
+            getState: getState
         };
     };
-    return {create, createFromScriptUrl};
-}();
+    return {
+        create:create,
+        createFromScriptUrl:createFromScriptUrl
+    };
+})();
 
-StoryDisplayer = function() {
+const StoryDisplayer = (function() {
     var create = function(storyDiv_, story_, fullscreen=false) {
         var storyDiv = storyDiv_;
         var story = story_;
         var debug = false;
-        var displayScene = function(scene) {
-            storyDiv.style.backgroundImage = scene.background ? "url('"+scene.background+"')" : "";
-            storyDiv.getElementsByClassName("speech")[0].innerText = scene.text || "";
-            storyDiv.getElementsByClassName("speaker")[0].innerText = scene.speaker || "";
-            storyDiv.getElementsByClassName("speaker")[0].style.backgroundColor = scene.color || "";
-            storyDiv.getElementsByClassName("speaker")[0].style.display = (scene.speaker) ? "" : "none";
+        var displayState = function(state) {
+            storyDiv.style.backgroundImage = state.background ? "url('"+state.background+"')" : "";
+            storyDiv.getElementsByClassName("speech")[0].innerText = state.text || "";
+            storyDiv.getElementsByClassName("speaker")[0].innerText = state.speaker || "";
+            storyDiv.getElementsByClassName("speaker")[0].style.backgroundColor = state.color || "";
+            storyDiv.getElementsByClassName("speaker")[0].style.display = (state.speaker) ? "" : "none";
             let oldImageC = storyDiv.getElementsByClassName("image")[0];
-            if ((oldImageC==undefined&&scene.image)||(oldImageC!=undefined && (!oldImageC.style.backgroundImage.includes(scene.image)))) {
+            if ((oldImageC==undefined&&state.image)||(oldImageC!=undefined && (!oldImageC.style.backgroundImage.includes(state.image)))) {
                 if (oldImageC) {
                     oldImageC.style.opacity = 0;
                     oldImageC.className = "old-image";
                     setTimeout(function() {
-                        if (oldImageC.parentElement && oldImageC.style.backgroundImage!="url('"+scene.image+"')")
+                        if (oldImageC.parentElement && oldImageC.style.backgroundImage!="url('"+state.image+"')")
                             oldImageC.parentElement.removeChild(oldImageC);
                     }, 1000*parseFloat(getComputedStyle(oldImageC).transitionDuration.match(/([0-9]*\.[0-9]+|[0-9]+)/)[0]));
                 }
-                if (scene.image) {
-                    let newImageC = createElement("div", {className:"image", style:{backgroundImage:"url('"+scene.image+"')"}});
+                if (state.image) {
+                    let newImageC = createElement("div", {className:"image", style:{backgroundImage:"url('"+state.image+"')"}});
                     storyDiv.getElementsByClassName("images")[0].appendChild(newImageC);
                     getComputedStyle(newImageC).opacity; // force reflow
                     newImageC.style.opacity = 1;
@@ -199,22 +203,21 @@ StoryDisplayer = function() {
             }
             let choicesUl = storyDiv.getElementsByClassName("choices")[0];
             choicesUl.innerHTML = "";
-            choicesUl.style.display = scene.choices && scene.choices.length > 0 ? "" : "none";
-            if (scene.choices)
-                for (let choice of scene.choices) {
-                    let choiceIndex = scene.choices.indexOf(choice);
+            choicesUl.style.display = state.choices && state.choices.length > 0 ? "" : "none";
+            if (state.choices)
+                for (let choice of state.choices) {
+                    let choiceIndex = state.choices.indexOf(choice);
                     choicesUl.appendChild(createElement("li", {}, choice.text, {click:function(e){
                         if (story)
-                            displayScene(story.nextScene(choiceIndex));
+                            displayState(story.nextScene(choiceIndex));
                         e.stopPropagation();
                     }}));
                 }
-            refreshVars(scene.vars);
+            refreshVars(state.vars||{});
             return true;
         };
         var refreshVars = function(vars) {
-            if (!story) return;
-            varsDiv = storyDiv.getElementsByClassName("vars")[0];
+            var varsDiv = storyDiv.getElementsByClassName("vars")[0];
             for (const [name,variable] of Object.entries(vars)) {
                 if (variable.public) {
                     let varDiv = varsDiv.getElementsByClassName("var-"+name)[0];
@@ -252,8 +255,8 @@ StoryDisplayer = function() {
         storyDiv.appendChild(createElement("div", {className:"vars"}));
         storyDiv.addEventListener("click", function() {
             if (!story) return;
-            let scene = story.nextReply();
-            if (scene) displayScene(scene);
+            let state = story.nextReply();
+            if (state) displayState(state);
         });
         storyDiv.tabIndex = 0;
         storyDiv.addEventListener("keypress", function(e) {
@@ -263,7 +266,7 @@ StoryDisplayer = function() {
             }
         });
         if (story)
-            displayScene(story.getScene());
+            displayState(story.getState());
         if (fullscreen) {
             let fullscreenButton = createElement("img", {src:"fullscreen.svg", className:"fullscreen-button"}, [], {click:function(){
                 storyDiv.requestFullscreen();
@@ -273,10 +276,14 @@ StoryDisplayer = function() {
                 fullscreenButton.style.display = document.fullscreenElement==storyDiv ? "none" : "";
             });
         }
-        return {displayScene};
+        return {
+            displayState: displayState
+        };
     };
-    return {create};
-}();
+    return {
+        create: create
+    };
+})();
 
 // fonction utile d'Ambi
 function createElement(tag, properties={}, inner=[], eventListeners={}) {

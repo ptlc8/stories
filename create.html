@@ -41,7 +41,7 @@
             var currentReplyId = 0;
             var selectedImageId = undefined;
             var displayer = StoryDisplayer.create(document.getElementById("story"), null);
-            displayer.displayScene({speaker:"Créateur d'histoire",text:"Crée une nouvelle scène à gauche ⬅\nOu continue une histoire en collant le json en bas ⬇"});
+            displayer.displayState({speaker:"Créateur d'histoire",text:"Crée une nouvelle scène à gauche ⬅\nOu continue une histoire en collant le json en bas ⬇"});
             document.getElementById("add-scene").addEventListener("click", function() {
                 scenes.push({background:"", replies:[{text:""}], atEnd:"choices", choices:[]});
                 refreshScenes();
@@ -175,7 +175,7 @@
             }
             function refreshScene() {
                 //TODO : condition x choices
-                displayer.displayScene({
+                displayer.displayState({
                     background: scenes[currentSceneId].background!==undefined ? images[scenes[currentSceneId].background] : undefined,
                     text: scenes[currentSceneId].replies[currentReplyId].text,
                     speaker: scenes[currentSceneId].replies[currentReplyId].speaker,
