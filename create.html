@@ -107,7 +107,7 @@
                 if (scenes.length == 0) return alert("Il faut au moins une scène pour tester une histoire.");
                 var testerTab = open("tester.html");
                 testerTab.addEventListener("load", function(e) {
-                    testerTab.startTest({images:images, scenes:scenes, vars:vars});
+                    testerTab.startTest(JSON.parse(JSON.stringify({images:images, scenes:scenes, vars:vars})));
                 });
             });
             document.getElementById("save").addEventListener("click", function() {
