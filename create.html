@@ -247,7 +247,7 @@
                                 }
                             }}),
                             createElement("br"),
-                            createElement("span", {}, choice.condition==undefined?"":"si "+getTextCondition(choice.condition)),
+                            createElement("span", {}, choice.condition==undefined?"":"si "+getTextExpression(choice.condition)),
                             createElement("button", {style:{display:choice.condition==undefined?"none":""}}, "Changer la condition", {click:function(){
                                 alert("work in progress");// TODO
                             }}),
@@ -425,22 +425,15 @@
             function closePopup(popupDiv) {
                 popupDiv.parentElement.click();
             }
-            function getTextCondition(condition) {
-                if (condition.var)
-                    return condition.var;
-                if (["<",">","!=","==","<=",">="].includes(condition.op))
-                    return "("+getTextExpression(condition.a)+condition.op+getTextExpression(condition.b)+")";
-                if (["&&","||"].includes(condition.op))
-                    return "("+getTextCondition(condition.a)+condition.op+getTextCondition(condition.b)+")";
-                if (["!"].includes(condition.op))
-                    return condition.op+getTextCondition(condition.a);
-                return condition;
-            }
             function getTextExpression(expression) {
                 if (expression.var)
                     return expression.var;
-                if (["+","-","*","%"].includes(expression.op))
+                if (["<",">","!=","==","<=",">="].includes(expression.op))
                     return "("+getTextExpression(expression.a)+expression.op+getTextExpression(expression.b)+")";
+                if (["&&","||","+","-","*","%"].includes(expression.op))
+                    return "("+getTextExpression(expression.a)+expression.op+getTextExpression(expression.b)+")";
+                if (["!"].includes(expression.op))
+                    return expression.op+getTextExpression(expression.a);
                 return expression;
             }
         </script>
