@@ -68,7 +68,7 @@ html, body {
     /*height: calc(48% - 1em);*/
     /*overflow-y: auto;*/
 }
-#images figure, #scenes figure {
+#images figure, #scenes .scene {
     flex-flow: column;
     width: 100%;
     margin: 0;
@@ -79,19 +79,37 @@ html, body {
     width: 20%;
     display: inline-flex;
 }
-#images img, #scenes canvas {
+#scenes .preview {
+    min-height: 8em;
+    cursor: pointer;
+    background-position: center;
+    background-size: cover;
+    text-align: center;
+    text-shadow: 1px 1px white;
+}
+#scenes .preview img {
+    height: 8em;
+    float: left;
+}
+#scenes .preview .title {
+    font-size: 2em;
+}
+#images img {
     width: 100%;
 }
-#images.FOCUS img, #scenes canvas {
+#images.FOCUS img {
     cursor: pointer;
 }
-#images figcaption, #scenes figcaption {
+#images button, #scenes button {
     background-color: #202020;
     color: #ffffff;
     text-align: center;
     cursor: pointer;
+    border: 0;
+    padding: 0.5em;
+    outline-color: cornflowerblue;
 }
-#images.FOCUS figcaption {
+#images.FOCUS button {
     display: none;
 }
 #add-scene {

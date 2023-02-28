@@ -212,7 +212,7 @@
                         createElement("img", {src:image}, [], {click:function(e){
                             selectedImageId = index;
                         }}),
-                        createElement("figcaption", {}, "❌ Supprimer l'image", {click:function(e){
+                        createElement("button", {}, "❌ Supprimer l'image", {click:function(e){
                             images.splice(index, 1);
                             refreshImages();
                             refreshJSON();
@@ -285,30 +285,24 @@
                 scenesDiv.innerHTML = "";
                 for (const [i, scene] of scenes.entries()) {
                     let index = i;
-                    var fig = createElement("figure");
-                    let cvs = document.createElement("canvas");
-                    drawScenePreview(cvs, scene).then(function() {
-                        var ctx = cvs.getContext('2d');
-                        ctx.strokeStyle = "white";
-                        ctx.font = "36px Arial";
-                        ctx.strokeText("Scène n°"+index, 30, 60);
-                        ctx.font = "24px Arial";
-                        ctx.strokeText("Clique ici pour éditer", 30, 90);
-                        ctx.fillStyle = "black";
-                        ctx.font = "36px Arial";
-                        ctx.fillText("Scène n°"+index, 30, 60);
-                        ctx.font = "24px Arial";
-                        ctx.fillText("Clique ici pour éditer", 30, 90);
-                    });
-                    cvs.addEventListener("click", function(e) {
+                    var fig = createElement("div", {className: "scene"});
+                    let preview = createElement("div", {className: "preview"}, [
+                        createElement("img", {src:scene.replies[0] && Number.isInteger(scene.replies[0].image) ? images[scene.replies[0].image] : ""}),
+                        createElement("span", {className:"title"}, "Scène n°"+index),
+                        createElement("br"),
+                        createElement("span", {}, "Clique ici pour éditer")
+                    ]);
+                    if (Number.isInteger(scene.background))
+                        preview.style.backgroundImage = "url('"+images[scene.background]+"')";
+                    preview.addEventListener("click", function(e) {
                         currentSceneId = index;
                         currentReplyId = 0;
                         refreshReplies();
                         refreshScene();
                         refreshChoices();
                     });
-                    fig.appendChild(cvs);
-                    var cap = createElement("figcaption", {}, "❌ Supprimer la scène", {click:function(e){
+                    fig.appendChild(preview);
+                    var cap = createElement("button", {}, "❌ Supprimer la scène", {click:function(e){
                         if (!confirm("Supprimer cette scène ?")) return;
                         scenes.splice(index, 1);
                         refreshScenes();
@@ -317,23 +311,6 @@
                     fig.appendChild(cap);
                     scenesDiv.appendChild(fig);
                 }
-            }
-            function drawScenePreview(cvs, scene) {
-                var promise = new Promise (function(resolve, reject) {
-                    var imageNeeded = scene.replies[0] && Number.isInteger(scene.replies[0].image) ? 2 : Number.isInteger(scene.background) ? 1 : 0;
-                    var ctx = cvs.getContext("2d");
-                    var bg = new Image();
-                    var img = new Image();
-                    bg.src = Number.isInteger(scene.background) ? images[scene.background] : "";
-                    img.src = scene.replies[0] && Number.isInteger(scene.replies[0].image) ? images[scene.replies[0].image] : "";
-                    if (!imageNeeded) resolve();
-                    bg.onload = img.onload = function() {
-                        ctx.drawImage(bg, 0, 0, cvs.width, cvs.height);
-                        ctx.drawImage(img, 0, 0, cvs.width, cvs.height);
-                        if (--imageNeeded == 0) resolve();
-                    }
-                });
-                return promise;
             }
             function refreshJSON() {
                 document.getElementById("json").value = JSON.stringify({images:images, scenes:scenes, vars:vars});
@@ -405,23 +382,23 @@
                 });
             });
             function createPopup(properties={}, inner=[]) {
-				return new Promise(function(resolve,reject) {
-					properties.className = properties.className ? properties.className+" popup" : "popup";
-					document.body.appendChild(createElement("div", {className:"popup-container"}, [
-						createElement("div", properties, [
-							createElement("span", {className:"close-button"}, "❌", {click:function(){
-								this.parentElement.parentElement.parentElement.removeChild(this.parentElement.parentElement);
-								resolve();
-							}})
-						].concat(inner), {click:function(e){
-							e.stopPropagation();
-						}})
-					], {click:function(){
-						this.parentElement.removeChild(this);
-						resolve();
-					}}));
-				});
-			}
+                return new Promise(function(resolve,reject) {
+                    properties.className = properties.className ? properties.className+" popup" : "popup";
+                    document.body.appendChild(createElement("div", {className:"popup-container"}, [
+                        createElement("div", properties, [
+                            createElement("span", {className:"close-button"}, "❌", {click:function(){
+                                this.parentElement.parentElement.parentElement.removeChild(this.parentElement.parentElement);
+                                resolve();
+                            }})
+                        ].concat(inner), {click:function(e){
+                            e.stopPropagation();
+                        }})
+                    ], {click:function(){
+                        this.parentElement.removeChild(this);
+                        resolve();
+                    }}));
+                });
+            }
             function closePopup(popupDiv) {
                 popupDiv.parentElement.click();
             }
