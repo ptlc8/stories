@@ -136,28 +136,23 @@ const Story = (function() {
             currentSceneId = id;
             currentReplyId = 0;
         };
-        var nextScene = function(choiceId=null) {
-            if (choiceId == null) {
-                let choices = [];
-                for (let choice of scenes[currentSceneId].choices) {
-                    if (testExpression(choice.condition))
-                        choices.push(choice);
-                }
-                if (choices.length == 0) {
-                    logInfo("Aucun choix possible OmG");
-                    return null;
-                }
+        var nextScene = function(choiceIndex=null) {
+            let choices = [];
+            for (let choice of scenes[currentSceneId].choices) {
+                if (testExpression(choice.condition))
+                    choices.push(choice);
+            }
+            if (choices.length == 0) {
+                logInfo("Aucun choix possible OmG");
+                return null;
+            }
+            if (choiceIndex == null) {
                 let choice = choices[parseInt(Math.random()*choices.length)];
                 applyEffect(choice.effect);
                 goToScene(choice.id);
             } else {
-                if (testExpression(scenes[currentSceneId].choices[choiceId].condition)) {
-                    applyEffect(scenes[currentSceneId].choices[choiceId].effect);
-                    goToScene(scenes[currentSceneId].choices[choiceId].id);
-                } else {
-                    logInfo("Impossible d'effectuer ce choix");
-                    return null;
-                }
+                applyEffect(choices[choiceIndex].effect);
+                goToScene(choices[choiceIndex].id);
             }
             return getState();
         };
