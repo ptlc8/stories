@@ -1,0 +1,193 @@
+{
+  "images": [
+    "assets/forest.jpg",
+    "assets/hill.jpg",
+    "assets/mountain.jpg",
+    "assets/lake.jpg",
+    "assets/pe-dessin.png"
+  ],
+  "scenes": [
+    {
+      "background": 0,
+      "replies": [
+        {
+          "text": "Tout commence le jour où le jeune Paul-Étienne se réveille dans un autre monde"
+        },
+        {
+          "speaker": "Paul-Étienne",
+          "text": "Aïe aïe aïe j'ai mal à la tête...\nOù suis-je ?!",
+          "image": 4
+        }
+      ],
+      "atEnd": "choices",
+      "choices": [
+        {
+          "id": 1,
+          "text": "Choix A",
+          "effect": {
+            "a": "luck",
+            "op": "set",
+            "b": {
+              "a": {
+                "var": "luck"
+              },
+              "op": "+",
+              "b": 1
+            }
+          }
+        },
+        {
+          "id": 2,
+          "text": "Choix B",
+          "effect": {
+            "a": "luck",
+            "op": "set",
+            "b": {
+              "a": {
+                "var": "luck"
+              },
+              "op": "+",
+              "b": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "background": 1,
+      "replies": [
+        {
+          "text": "Bienvenue dans le monde A"
+        },
+        {
+          "text": "Yes t'as tout vu"
+        }
+      ],
+      "atEnd": "choices",
+      "choices": [
+        {
+          "id": 4,
+          "text": "Repartir"
+        }
+      ]
+    },
+    {
+      "background": 2,
+      "replies": [
+        {
+          "text": "Bienvenue dans le monde B"
+        },
+        {
+          "text": "Maintenant tu peux repartir"
+        }
+      ],
+      "atEnd": "choices",
+      "choices": [
+        {
+          "id": 4,
+          "text": "Au revoir"
+        }
+      ]
+    },
+    {
+      "background": 3,
+      "replies": [
+        {
+          "text": "Et le dernier monde, le monde C"
+        },
+        {
+          "text": "C'est beau hein ?"
+        },
+        {
+          "text": "Aller oust !"
+        }
+      ],
+      "atEnd": "choices",
+      "choices": [
+        {
+          "id": 4,
+          "text": "Oust !"
+        }
+      ]
+    },
+    {
+      "background": 0,
+      "replies": [
+        {
+          "speaker": "Paul-Étienne",
+          "text": "Yes, on fait quoi maintenant ?",
+          "image": 4
+        }
+      ],
+      "atEnd": "choices",
+      "choices": [
+        {
+          "id": 1,
+          "text": "Choix A",
+          "effect": {
+            "a": "luck",
+            "op": "set",
+            "b": {
+              "a": {
+                "var": "luck"
+              },
+              "op": "+",
+              "b": 1
+            }
+          }
+        },
+        {
+          "id": 2,
+          "text": "Choix B",
+          "effect": {
+            "a": "luck",
+            "op": "set",
+            "b": {
+              "a": {
+                "var": "luck"
+              },
+              "op": "+",
+              "b": 1
+            }
+          }
+        },
+        {
+          "id": 3,
+          "text": "Choix C",
+          "condition": {
+            "a": {
+              "var": "luck"
+            },
+            "op": ">",
+            "b": 6
+          }
+        }
+      ]
+    }
+  ],
+  "vars": {
+    "food": {
+      "value": 5,
+      "type": "int"
+    },
+    "karma": {
+      "value": 5,
+      "type": "int"
+    },
+    "sleep": {
+      "value": 5,
+      "type": "int"
+    },
+    "luck": {
+      "value": 5,
+      "type": "int",
+      "public": true,
+      "max": 7,
+      "color": "#44ff44"
+    },
+    "courage": {
+      "value": 5,
+      "type": "int"
+    }
+  }
+}
