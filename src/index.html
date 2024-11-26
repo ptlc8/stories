@@ -29,8 +29,8 @@
         </div>
         <script>
             var urlParams = new URLSearchParams(window.location.search);
-            var scriptName = urlParams.has("script") ? urlParams.get("script") : "script";
-            Story.createFromScriptUrl(scriptName+".json").then(function(story) {
+            var scriptName = urlParams.has("script") ? "stories/" + urlParams.get("script") : "example";
+            Story.createFromScriptUrl(scriptName + ".json").then(function(story) {
                 StoryDisplayer.create(document.getElementById("story"), story, true);
             });
         </script>

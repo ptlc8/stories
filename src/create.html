@@ -288,7 +288,8 @@
                     var fig = createElement("div", {className: "scene"});
                     let preview = createElement("div", {className: "preview"}, [
                         createElement("img", {src:scene.replies[0] && Number.isInteger(scene.replies[0].image) ? images[scene.replies[0].image] : ""}),
-                        createElement("span", {className:"title"}, "Scène n°"+index),
+                        createElement("span", {className:"title"}, "Scène n°"+index),createElement("br"),
+                        createElement("span", {}, "« "+scene?.replies?.[0].text+" »"),
                         createElement("br"),
                         createElement("span", {}, "Clique ici pour éditer")
                     ]);

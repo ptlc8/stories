@@ -1,0 +1,18 @@
+{
+    "node": true,
+    "browser": true,
+    "esversion": 6,
+    "bitwise": true,
+    "camelcase": true,
+    "immed": true,
+    "indent": 4,
+    "newcap": true,
+    "noarg": true,
+    "quotmark": "double",
+    "undef": true,
+    "unused": false,
+    "strict": true,
+    "trailingcomma": false,
+    "-W083":true,
+    "-W030":true
+}

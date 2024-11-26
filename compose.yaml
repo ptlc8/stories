@@ -1,0 +1,10 @@
+services:
+  server:
+    build: .
+    volumes:
+      - ${STORIES_DIR}:/home/static/stories
+    ports:
+      - 80
+    restart: always
+    labels:
+      - webproxy.path=stories

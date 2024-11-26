@@ -124,7 +124,6 @@ const Story = (function() {
         var nextReply = function() {
             if (currentReplyId+1 < scenes[currentSceneId].replies.length) {
                 currentReplyId++;
-                console.log("effects at "+currentReplyId+" ? "+(!(!(scenes[currentSceneId].replies[currentReplyId].effects))));
                 applyEffects(scenes[currentSceneId].replies[currentReplyId].effects);
             } else if (scenes[currentSceneId].atEnd == "redirect") {
                 goToScene(scenes[currentSceneId].redirect);
@@ -263,7 +262,7 @@ const StoryDisplayer = (function() {
         if (story)
             displayState(story.getState());
         if (fullscreen) {
-            let fullscreenButton = createElement("img", {src:"fullscreen.svg", className:"fullscreen-button"}, [], {click:function(){
+            let fullscreenButton = createElement("img", {src:"assets/fullscreen.svg", className:"fullscreen-button"}, [], {click:function(){
                 storyDiv.requestFullscreen();
             }});
             storyDiv.appendChild(fullscreenButton);
